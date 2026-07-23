@@ -27,6 +27,4 @@ public:
 
 private:
 
-     void RemoveRecvData(Connection& conn,size_t len);
-     
 };

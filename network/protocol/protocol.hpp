@@ -48,6 +48,9 @@ enum err_code : uint8_t {
     ERR_BLOCKED       = 9,
 };
 
+// 魔数，用于校验协议合法性
+const uint16_t MAGIC_NUM = 0x9230;
+
 // 消息头，固定 8 字节，布局: magic(2) + version(1) + type(1) + body_len(4)
 #pragma pack(1)
 struct packet_header {
