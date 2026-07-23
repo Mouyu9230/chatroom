@@ -1,6 +1,6 @@
 #include "recv_send.hpp"
 #include "../connection/connection.hpp"
-#include "../protocol/protocol.hpp"
+#include "../../protocol/protocol.hpp"
 
 #include <sys/socket.h>
 #include <unistd.h>
