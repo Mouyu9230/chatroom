@@ -89,7 +89,6 @@ int Socket::connect(const char* ip, int port) {
 
     if (::connect(fd_, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
         perror("connect");
-        return -1;
     }
 
     return 0;

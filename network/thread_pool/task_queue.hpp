@@ -67,7 +67,7 @@ public:
     bool wait_and_pop(T& out) {
         std::unique_lock<std::mutex> lock(mtx_);
         cv_.wait(lock, [this] { return closed_ || !queue_.empty(); });
-        if (queue_.empty())
+        if (queue_.empty()) 
             return false;
         out = std::move(queue_.front());
         queue_.pop();
