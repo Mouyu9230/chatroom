@@ -1,4 +1,6 @@
+#include <cstddef>
 #include <signal.h>
+#include <sys/epoll.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <netinet/tcp.h>
@@ -31,7 +33,7 @@ int main(int argc,char* argv[]){
 
     if(listen_sock.create_server(ip,port)!=0){
         //fpr
-        return 1;
+        return 1; 
     }
     listen_sock.set_nonblock();
     if(listen_sock.create_server(ip,port)!=0){
@@ -56,7 +58,68 @@ int main(int argc,char* argv[]){
 
      while(g_running){
 
-        
+        {
+            TaskResult result;
+            while(pool.try_get_result(result)){//处理任务结果循环
+
+                if(result.need_close){
+
+                    epoll_main.del(result.fd);
+                    connection_remove(result.fd);
+                    //fpr 移除完成  
+                    continue;
+
+                }
+                Connection* conn=connection_get(result.fd);
+                if(conn==NULL){
+                    //fpr连接关闭
+                    continue;
+                }
+                if(result.data.empty()){
+                    //fpr
+                }else{
+                    if(!rs_tool.AppendSendBuffer(*conn, result.data.data(), result.data.size())){
+                        //fpr
+                    epoll_main.del(result.fd);
+                    connection_remove(result.fd);
+                    continue; 
+                    }
+                    epoll_main.mod(result.fd,EPOLLIN|EPOLLOUT);
+                }
+
+            } 
+
+        }
+
+        int ev_num=epoll_main.wait(100);
+
+        if(ev_num<0){
+            if(errno==EINTR)continue;//被信号打断，重试
+            perror("[error] epoll_wait");
+            break;
+        }
+
+        for(int i=0;i<ev_num;i++){
+
+            const struct epoll_event& ev=epoll_main.events()[i];
+            const int ev_data_fd=ev.data.fd;
+
+            if(ev_data_fd==listen_sock.fd()){//处理监听事件
+
+
+
+            }
+
+
+
+
+        }
+
+
+
+
+
+
 
 
 
