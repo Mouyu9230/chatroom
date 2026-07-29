@@ -22,6 +22,8 @@ static volatile bool g_running = true;
 
 int main(int argc,char* argv[]){
 
+    //信号处理
+
     const char* ip="0.0.0.0";
     int port=2100;
     if(argc>1)port=std::atoi(argv[1]);
@@ -36,10 +38,7 @@ int main(int argc,char* argv[]){
         return 1; 
     }
     listen_sock.set_nonblock();
-    if(listen_sock.create_server(ip,port)!=0){
-        //fpr
-        return 1;
-    }
+
 
     network::Epoll epoll_main(1024);
     epoll_main.add(listen_sock.fd(),EPOLLIN);
@@ -104,37 +103,113 @@ int main(int argc,char* argv[]){
             const struct epoll_event& ev=epoll_main.events()[i];
             const int ev_data_fd=ev.data.fd;
 
-            if(ev_data_fd==listen_sock.fd()){//处理监听事件
+            if(ev_data_fd==listen_sock.fd()){//新连接
+                if(ev.events&EPOLLIN){
+                    while(true){
+                        //避免 Socket::accept()对 EAGAIN 也调 perror
+                        int connfd=::accept4(listen_sock.fd(), nullptr, nullptr,
+                                               SOCK_NONBLOCK);
+                        if(connfd<0){
+                            if(errno==EAGAIN||errno==EINTR)
+                                break;          // 已无新连接
+                            perror("[error] accept");
+                            break;
+                        }
+                        int optval = 1;
+                        setsockopt(connfd, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof(optval));
 
+                        if (connection_add(connfd) != 0) {
+                            ::close(connfd);
+                            fprintf(stderr, "[warn] connection_add failed for fd=%d\n", connfd);
+                            continue;
+                        }
+                        epoll_main.add(connfd, EPOLLIN);
+                        fprintf(stdout, "[accept] fd=%d\n", connfd);
+                    }
+
+
+                }
+                continue;
 
 
             }
+            //数据连接
+            Connection* conn = connection_get(ev.data.fd);
+            if (conn == nullptr) {
+                continue;   // 竞态：已在另一个事件处理中被清理
+            }
+
+            // 异常 / 挂断
+            if (ev.events & (EPOLLERR | EPOLLHUP)) {
+                epoll_main.del(ev.data.fd);
+                connection_remove(ev.data.fd);
+                fprintf(stdout, "[close] fd=%d (EPOLLERR|EPOLLHUP)\n", ev_data_fd);
+                continue;
+            }
+
+            // 可读
+            if (ev.events & EPOLLIN) {
+                int ret = rs_tool.Recv(*conn);
+                if (ret <= 0) {
+                    // ret == 0  → 对端关闭 (EOF)
+                    // ret <  0  → 接收错误
+                    epoll_main.del(ev_data_fd);
+                    connection_remove(ev_data_fd);
+                    fprintf(stdout, "[close] fd=%d (recv=%d)\n", ev_data_fd, ret);
+                    continue;
+                }
+
+                // 从接收缓冲区中取出所有完整数据包
+                while (rs_tool.HasCompletePacket(*conn)) {
+                    // 读取包头以获取 body 长度
+                    auto* hdr = reinterpret_cast<protocol::packet_header*>(conn->recv_buffer());
+                    std::size_t total_len = sizeof(protocol::packet_header) + hdr->body_len;
+
+                    Task task;
+                    task.fd  = ev_data_fd;
+                    task.user_id = conn->user_id();
+                    task.data.resize(total_len);
+
+                    std::size_t packet_len = 0;
+                    int fetch_ret = rs_tool.FetchPacket(*conn, task.data.data(), packet_len);
+                    if (fetch_ret == 0 && packet_len > 0) {
+                        pool.submit(std::move(task));
+                    } else {
+                        break;  // 提取失败，等待更多数据
+                    }
+                }
+            }
+            //可写
+            if (ev.events & EPOLLOUT) {
+                int ret = rs_tool.Send(*conn);
+                if (ret < 0) {
+                    epoll_main.del(ev_data_fd);
+                    connection_remove(ev_data_fd);
+                    fprintf(stdout, "[close] fd=%d (send error)\n", ev_data_fd);
+                    continue;
+                }
+
+                // 发送缓冲区已空 关闭写监听，避免 epoll 空转
+                if (conn->send_length() == 0) {
+                    epoll_main.mod(ev_data_fd, EPOLLIN);
+                }
+            }
+
+        }//wait结果处理循环结束
 
 
+     }//主循环结束
 
+    fprintf(stdout, "\n[shutdown] stopping thread pool...\n");
+    pool.stop();
 
-        }
+    fprintf(stdout, "[shutdown] closing all connections...\n");
+    for (int i = 0; i < MAX_CONN; ++i) {
+        connection_remove(i);
+    }
 
-
-
-
-
-
-
-
-
-
-     }
-
-
-
-
-
-
-
-
-
-
+    fprintf(stdout, "[shutdown] server stopped gracefully.\n");
+    return 0;
 
 
 
