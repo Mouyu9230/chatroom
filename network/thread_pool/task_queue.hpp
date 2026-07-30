@@ -61,7 +61,7 @@ public:
         out = std::move(queue_.front());
         queue_.pop();
         return true;
-    }
+    } 
 
     /// 阻塞出队
     bool wait_and_pop(T& out) {
@@ -97,7 +97,7 @@ private:
 
     mutable std::mutex mtx_;//mutable以在 const 函数中加锁
     std::queue<T> queue_;
-    std::condition_variable cv_;
+    std::condition_variable cv_;  
     bool closed_ = false;
 
 };

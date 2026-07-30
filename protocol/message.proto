@@ -1,0 +1,193 @@
+syntax = "proto3";
+
+package protocol;
+
+option cc_generic_services = false;
+
+// ============================================================
+//  常量（proto 无常量定义，此处仅做文档记录）
+//
+//   HEADER_LEN    = 8        // 消息头固定 8 字节 (framing 层)
+//   MAX_BODY_LEN  = 16777216 // body 最大 16MB
+//   MAX_NICK_LEN  = 64
+//   MAX_MSG_LEN   = 4096     // 单条消息最大长度
+//   MAGIC_NUM     = 0x9230   // 魔数，用于校验协议合法性
+// ============================================================
+
+// ------------------------------------------------------------------
+// 消息类型 (对应原 C++ msg_type, 值保持一致)
+// ------------------------------------------------------------------
+
+
+enum MsgType {
+  MSG_TYPE_UNSPECIFIED  = 0;    // proto3 要求 0 值占位
+
+  MSG_TYPE_LOGIN_REQ       = 0x01;
+  MSG_TYPE_LOGIN_RESP      = 0x02;
+  MSG_TYPE_REGISTER_REQ    = 0x03;
+  MSG_TYPE_REGISTER_RESP   = 0x04;
+  MSG_TYPE_CANCEL_REQ      = 0x05;
+  MSG_TYPE_CANCEL_RESP     = 0x06;
+  MSG_TYPE_LOGOUT_REQ      = 0x07;
+  MSG_TYPE_LOGOUT_RESP     = 0x08;
+  MSG_TYPE_HEARTBEAT_REQ   = 0x09;
+  MSG_TYPE_HEARTBEAT_RESP  = 0x0A;
+  MSG_TYPE_SYSTEM_NOTIFY   = 0x0B;
+  MSG_TYPE_FRIEND_ADD_REQ  = 0x0C;
+  MSG_TYPE_FRIEND_ADD_RESP = 0x0D;
+  MSG_TYPE_FRIEND_DEL_REQ  = 0x0E;
+  MSG_TYPE_FRIEND_DEL_RESP = 0x0F;
+  MSG_TYPE_FRIEND_CHECK_REQ  = 0x11;
+  MSG_TYPE_FRIEND_CHECK_RESP = 0x12;
+  MSG_TYPE_FRIEND_BLOCK_REQ  = 0x13;
+  MSG_TYPE_FRIEND_BLOCK_RESP = 0x14;
+  MSG_TYPE_CHAT_REQ         = 0x15;
+  MSG_TYPE_CHAT_RESP        = 0x16;
+}
+
+// ------------------------------------------------------------------
+// 错误码 (对应原 C++ err_code)
+// ------------------------------------------------------------------
+enum ErrCode {
+  ERR_SUCCESS        = 0;
+  ERR_SYSTEM         = 1;
+  ERR_INVALID_PARAM  = 2;
+  ERR_INVALID_USER   = 3;
+  ERR_USER_EXISTS    = 4;
+  ERR_NOT_LOGGED_IN  = 5;
+  ERR_FULL           = 6;
+  ERR_NOT_FRIEND     = 7;
+  ERR_ALREADY_FRIEND = 8;
+  ERR_BLOCKED        = 9;
+}
+
+// ============================================================
+//  统一消息信封 —— 外部 framing 仍保留 8 字节头部
+//  (magic + version + type + body_len), body 为对应 Message
+//  的 protobuf 序列化结果。
+// ============================================================
+
+message LoginRequest {
+  string username = 1;   // max 64
+  string password = 2;   // max 64
+}
+
+message LoginResponse {
+  ErrCode err   = 1;
+  uint32 userid = 2;
+}
+
+message RegisterRequest {
+  string username = 1;   // max 64
+  string password = 2;   // max 64
+  string nickname = 3;   // max 64
+}
+
+message RegisterResponse {
+  ErrCode err   = 1;
+  uint32 userid = 2;
+}
+
+message CancelRequest {
+  string username = 1;   // max 64
+  string password = 2;   // max 64
+}
+
+message CancelResponse {
+  ErrCode err   = 1;
+  uint32 userid = 2;
+}
+
+message LogoutRequest {
+  uint32 userid = 1;
+}
+
+message LogoutResponse {
+  ErrCode err = 1;
+}
+
+// 心跳: HeartbeatReq / HeartbeatResp 均为空 body
+
+message HeartbeatReq  {}
+message HeartbeatResp {}
+
+message SystemNotify {
+  string content = 1;   // max 256
+}
+
+message FriendAddRequest {
+  uint32 friend_id = 1;
+}
+
+message FriendAddResponse {
+  ErrCode err       = 1;
+  uint32 friend_id  = 2;
+  string nickname   = 3;   // max 64
+}
+
+message FriendDelRequest {
+  uint32 friend_id = 1;
+}
+
+message FriendDelResponse {
+  ErrCode err = 1;
+}
+
+message FriendCheckRequest {
+  uint32 friend_id = 1;
+}
+
+message FriendCheckResponse {
+  ErrCode err     = 1;
+  bool    is_friend  = 2;   // 原 C++ 用 uint8_t 0/1
+  bool    is_blocked = 3;   // 原 C++ 用 uint8_t 0/1
+}
+
+message FriendBlockRequest {
+  uint32 friend_id = 1;
+  bool   block     = 2;     // 原 C++ 用 uint8_t 0/1
+}
+
+message FriendBlockResponse {
+  ErrCode err = 1;
+}
+
+// 聊天消息，content 作为 string 内嵌在此 message 中
+message ChatRequest {
+  uint32 receiver_id = 1;
+  string content     = 2;   // max 4096
+}
+
+message ChatResponse {
+  ErrCode err    = 1;
+  uint32 msg_id = 2;
+}
+
+// ------------------------------------------------------------------
+//  顶层 Oneof —— 用于将 type 分派与 body 反序列化统一
+// ------------------------------------------------------------------
+message Packet {
+  oneof body {
+    LoginRequest        login_req        = 1;
+    LoginResponse       login_resp       = 2;
+    RegisterRequest     register_req     = 3;
+    RegisterResponse    register_resp    = 4;
+    CancelRequest       cancel_req       = 5;
+    CancelResponse      cancel_resp      = 6;
+    LogoutRequest       logout_req       = 7;
+    LogoutResponse      logout_resp      = 8;
+    HeartbeatReq        heartbeat_req    = 9;
+    HeartbeatResp       heartbeat_resp   = 10;
+    SystemNotify        system_notify    = 11;
+    FriendAddRequest    friend_add_req   = 12;
+    FriendAddResponse   friend_add_resp  = 13;
+    FriendDelRequest    friend_del_req   = 14;
+    FriendDelResponse   friend_del_resp  = 15;
+    FriendCheckRequest  friend_check_req = 16;
+    FriendCheckResponse friend_check_resp= 17;
+    FriendBlockRequest  friend_block_req = 18;
+    FriendBlockResponse friend_block_resp= 19;
+    ChatRequest         chat_req         = 20;
+    ChatResponse        chat_resp        = 21;
+  }
+}

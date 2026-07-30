@@ -18,7 +18,7 @@ void ThreadPool::start(TaskHandler handler) {
 
 void ThreadPool::stop() {
     // 1. 关闭任务队列 —— worker 在 wait_and_pop 中被唤醒，排空后退出
-    task_queue_.close();
+    task_queue_.close(); 
 
     // 2. 等待所有 worker 退出
     for (auto& t : workers_) {

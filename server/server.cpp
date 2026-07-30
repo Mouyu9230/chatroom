@@ -149,7 +149,7 @@ int main(int argc,char* argv[]){
 
             // 可读
             if (ev.events & EPOLLIN) {
-                int ret = rs_tool.Recv(*conn);
+                int ret = rs_tool.Recv(*conn); 
                 if (ret <= 0) {
                     // ret == 0  → 对端关闭 (EOF)
                     // ret <  0  → 接收错误
@@ -161,7 +161,7 @@ int main(int argc,char* argv[]){
 
                 // 从接收缓冲区中取出所有完整数据包
                 while (rs_tool.HasCompletePacket(*conn)) {
-                    // 读取包头以获取 body 长度
+                    // 读取包 头以获取 body 长度
                     auto* hdr = reinterpret_cast<protocol::packet_header*>(conn->recv_buffer());
                     std::size_t total_len = sizeof(protocol::packet_header) + hdr->body_len;
 
@@ -175,11 +175,11 @@ int main(int argc,char* argv[]){
                     if (fetch_ret == 0 && packet_len > 0) {
                         pool.submit(std::move(task));
                     } else {
-                        break;  // 提取失败，等待更多数据
+                        break;  // 提取失败，等待更多数据 
                     }
                 }
             }
-            //可写
+            //可写 
             if (ev.events & EPOLLOUT) {
                 int ret = rs_tool.Send(*conn);
                 if (ret < 0) {
