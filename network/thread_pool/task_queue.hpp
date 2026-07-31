@@ -49,7 +49,7 @@ public:
         {
             std::lock_guard<std::mutex> lock(mtx_);
             queue_.push(std::move(item));
-        }
+        } 
         cv_.notify_one();
     }
 
@@ -77,7 +77,7 @@ public:
     /// 关闭队列，唤醒所有阻塞的等待者
     void close() {
         {
-            std::lock_guard<std::mutex> lock(mtx_);
+            std::lock_guard<std::mutex> lock(   mtx_); 
             closed_ = true;
         }
         cv_.notify_all();

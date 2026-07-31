@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package protocol.chat;
+
+import "user.proto";
+
+// ============================================================
+//  chat.proto —— 聊天域
+//
+//  定位: 在线聊天的消息收发。demo 只实现 1:1 私聊,
+//  群聊/历史消息/消息类型扩展作为未来方向预留(已定义占位)。
+//
+//  设计要点:
+//    - ChatMessage 是服务端落库/转发的完整消息体, 由服务端填
+//      msg_id / ts, 客户端不构造;
+//    - to_type 区分单聊/群聊, 未来加群聊时无需改字段号;
+//    - 服务器向接收方推送用 ChatNotify(不是 ChatResponse)。
+//  兼容性约束同 user.proto: 字段号不可复用, 只能向后追加。
+// ============================================================
+
+// 聊天对象类型
+enum TargetType {
+  TARGET_TYPE_UNSPECIFIED = 0;
+  TARGET_TYPE_USER        = 1;   // 1:1 私聊 (demo)
+  TARGET_TYPE_GROUP       = 2;   // 未来: 群聊
+}
+
+// 消息内容类型 (未来扩展: 图片/文件/语音)
+enum MsgType {
+  MSG_TYPE_TEXT  = 0;   // demo
+  MSG_TYPE_IMAGE = 1;   // 未来
+  MSG_TYPE_FILE  = 2;   // 未来
+}
+
+// ------------------------------------------------------------
+//  单条聊天消息(完整形态, 服务端构造并保存)
+// ------------------------------------------------------------
+message ChatMessage {
+  uint64     msg_id   = 1;   // 服务端分配, 全局递增
+  uint32     from_id  = 2;   // 发送者 user_id
+  uint32     to_id    = 3;   // 接收者 user_id / group_id
+  TargetType to_type  = 4;   // 单聊/群聊 (demo 固定 USER)
+  MsgType    msg_type = 5;   // 文本/图片/文件 (demo 固定 TEXT)
+  string     content  = 6;   // max 4096
+  uint64     ts       = 7;   // 服务端时间戳(毫秒)
+}
+
+// ------------------------------------------------------------
+//  发送消息 (client -> server)
+// ------------------------------------------------------------
+message ChatSendRequest {
+  uint32 to_id     = 1;
+  string content   = 2;   // max 4096
+  uint64 client_ts = 3;   // 客户端毫秒时间戳, 未来用于排序
+}
+
+message ChatSendResponse {
+  user.ErrCode err       = 1;
+  uint64       msg_id    = 2;
+  uint64       server_ts = 3;
+}
+
+// 新消息推送 (server -> client, 接收方实时收到)
+message ChatNotify {
+  ChatMessage msg = 1;
+}
+
+// ------------------------------------------------------------
+//  未来扩展占位
+// ------------------------------------------------------------
+
+// 离线 / 历史消息拉取
+message ChatHistoryRequest {
+  uint32 target_id    = 1;
+  uint64 after_msg_id = 2;   // 增量拉取游标
+  uint32 limit        = 3;
+}
+
+message ChatHistoryResponse {
+  repeated ChatMessage messages = 1;
+}
+
+// 已读回执
+message ChatReadAck {
+  uint64 msg_id = 1;
+}
+
+// ------------------------------------------------------------
+//  聊天域信封 —— 统一本域消息的分派与反序列化
+// ------------------------------------------------------------
+message ChatPacket {
+  oneof body {
+    ChatSendRequest      send_req    = 1;
+    ChatSendResponse     send_resp   = 2;
+    ChatNotify           notify      = 3;
+    ChatHistoryRequest   history_req = 4;
+    ChatHistoryResponse  history_resp= 5;
+    ChatReadAck          read_ack    = 6;
+  }
+}

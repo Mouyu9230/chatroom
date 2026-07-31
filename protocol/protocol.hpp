@@ -1,6 +1,6 @@
 #pragma once
 
-#include "message.pb.h"
+#include "(!)message/message.pb.h"
 
 #include <cstdint>
 

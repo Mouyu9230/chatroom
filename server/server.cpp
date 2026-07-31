@@ -143,7 +143,7 @@ int main(int argc,char* argv[]){
             if (ev.events & (EPOLLERR | EPOLLHUP)) {
                 epoll_main.del(ev.data.fd);
                 connection_remove(ev.data.fd);
-                fprintf(stdout, "[close] fd=%d (EPOLLERR|EPOLLHUP)\n", ev_data_fd);
+                fprintf(stdout, "[close] fd=%d (EPOLLER R|EPOLLHUP)\n", ev_data_fd);
                 continue;
             }
 
@@ -161,7 +161,7 @@ int main(int argc,char* argv[]){
 
                 // 从接收缓冲区中取出所有完整数据包
                 while (rs_tool.HasCompletePacket(*conn)) {
-                    // 读取包 头以获取 body 长度
+                    // 读取包头以获取 body 长度
                     auto* hdr = reinterpret_cast<protocol::packet_header*>(conn->recv_buffer());
                     std::size_t total_len = sizeof(protocol::packet_header) + hdr->body_len;
 

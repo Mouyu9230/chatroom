@@ -1,0 +1,179 @@
+syntax = "proto3";
+
+package protocol.user;
+
+// ============================================================
+//  user.proto —— 用户域
+//
+//  定位: 账号认证、连接心跳、用户资料、好友系统。
+//  与 chat.proto 的关系: chat.proto 通过 import 复用本文件的
+//  共享类型(ErrCode / UserInfo)。
+//
+//  说明: 本文件按『demo 可跑 + 未来可扩』设计。
+//    - demo 必需: Register / Login / Logout / Heartbeat
+//    - 未来扩展(已定义占位, 暂不实现): Cancel / Friend* / UserStatusNotify
+//
+//  兼容性约束: proto3 字段号不可复用, 新增字段只能向后追加。
+//  未来新增用户侧能力时, 在此文件追加 message + UserPacket 分支,
+//  不要改动已发布字段的编号与语义。
+// ============================================================
+
+// 共享错误码 —— 被 chat 等其它域 import 使用
+enum ErrCode {
+  ERR_SUCCESS        = 0;
+  ERR_SYSTEM         = 1;
+  ERR_INVALID_PARAM  = 2;
+  ERR_INVALID_USER   = 3;   // 用户名或密码错误 / 用户不存在
+  ERR_USER_EXISTS    = 4;
+  ERR_NOT_LOGGED_IN  = 5;
+  ERR_FULL           = 6;   // 连接数/在线数已满
+  ERR_NOT_FRIEND     = 7;
+  ERR_ALREADY_FRIEND = 8;
+  ERR_BLOCKED        = 9;
+  // 未来: ERR_OFFLINE / ERR_TOO_FREQUENT / ERR_FORBIDDEN ...
+}
+
+// 用户公开信息(脱敏后的对外视图)
+message UserInfo {
+  uint32 user_id    = 1;
+  string nickname   = 2;   // max 64
+  string avatar     = 3;   // 未来: 头像地址
+  uint64 created_at = 4;   // 未来: 注册时间(unix 秒)
+  bool   online     = 5;   // 未来: 在线状态
+}
+
+// ------------------------------------------------------------
+//  认证 (demo 必需)
+// ------------------------------------------------------------
+
+// 注册
+message RegisterRequest {
+  string username = 1;   // max 64
+  string password = 2;   // max 64
+  string nickname = 3;   // max 64
+}
+
+message RegisterResponse {
+  ErrCode  err     = 1;
+  uint32   user_id = 2;
+}
+
+// 登录
+message LoginRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message LoginResponse {
+  ErrCode  err     = 1;
+  uint32   user_id = 2;
+  UserInfo user    = 3;   // 登录成功时带回完整用户信息
+}
+
+// 登出
+message LogoutRequest {
+  uint32 user_id = 1;
+}
+
+message LogoutResponse {
+  ErrCode err = 1;
+}
+
+// 注销账号 (未来扩展占位)
+message CancelRequest {
+  string username = 1;
+  string password = 2;
+}
+
+message CancelResponse {
+  ErrCode err = 1;
+}
+
+// ------------------------------------------------------------
+//  心跳 (demo 必需, 连接保活)
+// ------------------------------------------------------------
+
+message HeartbeatReq  {}
+message HeartbeatResp {}
+
+// ------------------------------------------------------------
+//  好友系统 (未来扩展占位)
+// ------------------------------------------------------------
+
+message FriendAddRequest {
+  uint32 friend_id = 1;
+}
+
+message FriendAddResponse {
+  ErrCode  err       = 1;
+  uint32   friend_id = 2;
+  string   nickname  = 3;
+}
+
+message FriendDelRequest {
+  uint32 friend_id = 1;
+}
+
+message FriendDelResponse {
+  ErrCode err = 1;
+}
+
+message FriendCheckRequest {
+  uint32 friend_id = 1;
+}
+
+message FriendCheckResponse {
+  ErrCode err        = 1;
+  bool    is_friend  = 2;
+  bool    is_blocked = 3;
+}
+
+message FriendBlockRequest {
+  uint32 friend_id = 1;
+  bool   block     = 2;
+}
+
+message FriendBlockResponse {
+  ErrCode err = 1;
+}
+
+// ------------------------------------------------------------
+//  系统 / 在线状态推送 (未来扩展)
+// ------------------------------------------------------------
+
+message SystemNotify {
+  string content = 1;   // max 256
+}
+
+message UserStatusNotify {
+  uint32 user_id = 1;
+  bool   online  = 2;
+}
+
+// ------------------------------------------------------------
+//  用户域信封 —— 统一本域消息的分派与反序列化
+// ------------------------------------------------------------
+message UserPacket {
+  oneof body {
+    RegisterRequest     register_req      = 1;
+    RegisterResponse    register_resp     = 2;
+    LoginRequest        login_req         = 3;
+    LoginResponse       login_resp        = 4;
+    LogoutRequest       logout_req        = 5;
+    LogoutResponse      logout_resp       = 6;
+    CancelRequest       cancel_req        = 7;
+    CancelResponse      cancel_resp       = 8;
+    HeartbeatReq        heartbeat_req     = 9;
+    HeartbeatResp       heartbeat_resp    = 10;
+    FriendAddRequest    friend_add_req    = 11;
+    FriendAddResponse   friend_add_resp   = 12;
+    FriendDelRequest    friend_del_req    = 13;
+    FriendDelResponse   friend_del_resp   = 14;
+    FriendCheckRequest  friend_check_req  = 15;
+    FriendCheckResponse friend_check_resp = 16;
+    FriendBlockRequest  friend_block_req  = 17;
+    FriendBlockResponse friend_block_resp = 18;
+    SystemNotify        system_notify     = 19;
+    UserStatusNotify    user_status_notify = 20;
+  }
+}
