@@ -12,6 +12,7 @@
 #include <utility>
 
 #include "../protocol/protocol.hpp"
+#include "../handler/handler.hpp"
 #include "../network/socket/socket.hpp"
 #include "../network/epoll/epoll.hpp"
 #include "../network/connection/connection.hpp"
@@ -47,9 +48,8 @@ int main(int argc,char* argv[]){
      ThreadPool pool;
      pool.start([](Task task)->TaskResult{
 
-        //根据tasktype分发任务 返回result
-
-        return TaskResult{task.fd,std::move(task.data),false};
+        // 分发到 handler 模块执行业务逻辑
+        return handler::handle_task(task);
      });
      //fpr
 
@@ -143,7 +143,7 @@ int main(int argc,char* argv[]){
             if (ev.events & (EPOLLERR | EPOLLHUP)) {
                 epoll_main.del(ev.data.fd);
                 connection_remove(ev.data.fd);
-                fprintf(stdout, "[close] fd=%d (EPOLLER R|EPOLLHUP)\n", ev_data_fd);
+                fprintf(stdout, "[close] fd=%d (EPOLLERR|EPOLLHUP)\n", ev_data_fd);
                 continue;
             }
 
@@ -159,7 +159,7 @@ int main(int argc,char* argv[]){
                     continue;
                 }
 
-                // 从接收缓冲区中取出所有完整数据包
+                // 从接收缓冲区中取出所 有完整数据包
                 while (rs_tool.HasCompletePacket(*conn)) {
                     // 读取包头以获取 body 长度
                     auto* hdr = reinterpret_cast<protocol::packet_header*>(conn->recv_buffer());
@@ -168,14 +168,14 @@ int main(int argc,char* argv[]){
                     Task task;
                     task.fd  = ev_data_fd;
                     task.user_id = conn->user_id();
-                    task.data.resize(total_len);
+                    task. data.resize(total_len);
 
                     std::size_t packet_len = 0;
                     int fetch_ret = rs_tool.FetchPacket(*conn, task.data.data(), packet_len);
                     if (fetch_ret == 0 && packet_len > 0) {
                         pool.submit(std::move(task));
-                    } else {
-                        break;  // 提取失败，等待更多数据 
+                    } else { 
+                        break;//提取失败等待更多数据
                     }
                 }
             }
@@ -187,8 +187,8 @@ int main(int argc,char* argv[]){
                     connection_remove(ev_data_fd);
                     fprintf(stdout, "[close] fd=%d (send error)\n", ev_data_fd);
                     continue;
-                }
-
+                } 
+ 
                 // 发送缓冲区已空 关闭写监听，避免 epoll 空转
                 if (conn->send_length() == 0) {
                     epoll_main.mod(ev_data_fd, EPOLLIN);
@@ -196,7 +196,7 @@ int main(int argc,char* argv[]){
             }
 
         }//wait结果处理循环结束
-
+ 
 
      }//主循环结束
 

@@ -36,7 +36,7 @@ struct TaskResult {
     bool need_close = false;    // true = 主线程需关闭此连接
 };
 
-//多生产者单消费者线程安全队列
+ 
 template<typename T>
 class MpscQueue {
 public:
