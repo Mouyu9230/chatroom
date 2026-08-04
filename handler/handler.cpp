@@ -31,15 +31,15 @@ std::vector<char> build_packet(uint8_t type, const google::protobuf::Message& bo
     return packet;
 }
 
-
-
+  
+    
 TaskResult on_heartbeat(const Task& task) {
     protocol::HeartbeatResp body;
     return TaskResult{task.fd, build_packet(protocol::MSG_TYPE_HEARTBEAT_RESP, body), false};
-}
+}  
 
 
-TaskResult on_login(const Task& task, const char* body, size_t body_len) {
+TaskResult on_login(const Task & task, const char* body, size_t body_len) {
 
     protocol::LoginRequest req;
 
@@ -49,16 +49,17 @@ TaskResult on_login(const Task& task, const char* body, size_t body_len) {
         return TaskResult{task.fd, {}, true};
 
     }
-
+    // 
     fprintf(stdout, "[handler] login: user=%s\n", req.username().c_str());
-
+ 
 
 //demo---
+
     protocol::LoginResponse resp;
     resp.set_err(protocol::ERR_SUCCESS);
     resp.set_userid(10086);
-//-------
 
+//------- '
 
     return TaskResult{task.fd, build_packet(protocol::MSG_TYPE_LOGIN_RESP, resp), false};
 }
@@ -69,14 +70,14 @@ TaskResult on_chat(const Task& task, const char* body, size_t body_len) {
 
     if (!req.ParseFromArray(body, static_cast<int>(body_len))) {
         return TaskResult{task.fd, {}, true};
-    }
-
+    }   
+ 
     fprintf(stdout, "[handler] chat: user=%u -> %u: %s\n",
             task.user_id, req.receiver_id(), req.content().c_str());
-
-//demo--
-    protocol::ChatResponse resp;
-    resp.set_err(protocol::ERR_SUCCESS);
+  
+//demo-- 
+    protocol::ChatResponse resp;  
+    resp.set_err(protocol::ERR_SUCCESS);  
     resp.set_msg_id(1); 
 //------
 
@@ -86,11 +87,14 @@ TaskResult on_chat(const Task& task, const char* body, size_t body_len) {
 }   
 
 
+
+
 // ------------------------------------------------------------
 TaskResult handle_task(const Task& task) {
 
-    if (task.data.size() < sizeof(protocol::packet_header)) {
+    if (task.data.size() < sizeof(protocol::packet_header)) { 
         fprintf(stderr, "[handler] packet too small: %zu\n", task.data.size());
+          
         return TaskResult{task.fd, {}, true};
     }
 
