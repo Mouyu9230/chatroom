@@ -21,9 +21,16 @@
 
 static volatile bool g_running = true;
 
+extern "C" void handle_signal(int sig) {
+    (void)sig;
+    g_running = false;
+}
+
 int main(int argc,char* argv[]){
 
-    //信号处理
+    signal(SIGINT,  handle_signal);
+    signal(SIGTERM, handle_signal);
+    signal(SIGPIPE, SIG_IGN);// 返回 EPIPE 而不是杀进程
 
     const char* ip="0.0.0.0";
     int port=2100;
@@ -48,7 +55,6 @@ int main(int argc,char* argv[]){
      ThreadPool pool;
      pool.start([](Task task)->TaskResult{
 
-        // 分发到 handler 模块执行业务逻辑
         return handler::handle_task(task);
      });
      //fpr

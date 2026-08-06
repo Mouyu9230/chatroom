@@ -56,7 +56,7 @@ public:
     /// 非阻塞出队
     bool try_pop(T& out) {
         std::lock_guard<std::mutex> lock(mtx_);
-        if (queue_.empty())
+        if (queue_.empty()) 
             return false;
         out = std::move(queue_.front());
         queue_.pop();

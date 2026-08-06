@@ -70,7 +70,7 @@ std::vector<char> build_packet(uint8_t type, const google::protobuf::Message& bo
 
     std::vector<char> packet;
     packet.resize(sizeof(protocol::packet_header) + body_str.size());
-
+ 
     auto* hdr = reinterpret_cast<protocol::packet_header*>(packet.data());
     hdr->magic    = protocol::MAGIC_NUM;
     hdr->ver      = 1;
@@ -125,7 +125,7 @@ bool request(int fd, uint8_t req_type, const google::protobuf::Message& req,
         if (pkt.empty()) {
             fprintf(stderr, "[client] read failed / connection closed\n");
             return false;
-        }
+              }
         auto* hdr = reinterpret_cast<const protocol::packet_header*>(pkt.data());
         if (hdr->type == expect_type) {
             resp_packet = std::move(pkt);
@@ -179,7 +179,7 @@ int main(int argc, char* argv[]) {
     fprintf(stdout, "[client] connected to %s:%d (fd=%d)\n", ip, port, fd);
     print_help();
 
-
+ 
     char line[1024];
     while(1){
 

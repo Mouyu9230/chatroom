@@ -1,0 +1,4 @@
+/home/chenyu/chatroom/build/CMakeFiles/server.dir
+/home/chenyu/chatroom/build/CMakeFiles/client.dir
+/home/chenyu/chatroom/build/CMakeFiles/edit_cache.dir
+/home/chenyu/chatroom/build/CMakeFiles/rebuild_cache.dir
