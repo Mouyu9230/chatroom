@@ -242,7 +242,7 @@ int main(int argc, char* argv[]) {
             req.set_content(content);
 
             std::vector<char> resp;
-            if (client::request(fd, protocol::MSG_TYPE_CHAT_REQ, req,
+            if (client::request( fd, protocol::MSG_TYPE_CHAT_REQ, req,
                                 protocol::MSG_TYPE_CHAT_RESP, resp)) {
                 auto* hdr = reinterpret_cast<const protocol::packet_header*>(resp.data());
                 protocol::ChatResponse rsp;

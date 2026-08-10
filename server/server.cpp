@@ -38,11 +38,12 @@ int main(int argc,char* argv[]){
     if(argc>2)ip=argv[2];
 
     connection_init();   
-    //fpr
+    fprintf(stdout,"[init] connection pool init successfully");
+
     network::Socket listen_sock;
 
     if(listen_sock.create_server(ip,port)!=0){
-        //fpr
+    fprintf(stdout,"[error] failed to create server");
         return 1; 
     }
     listen_sock.set_nonblock();
@@ -50,14 +51,15 @@ int main(int argc,char* argv[]){
 
     network::Epoll epoll_main(1024);
     epoll_main.add(listen_sock.fd(),EPOLLIN);
-    //fpr
+    fprintf(stdout,"[init] epoll created successfully fd=%d",listen_sock.fd());
 
      ThreadPool pool;
      pool.start([](Task task)->TaskResult{
 
         return handler::handle_task(task);
      });
-     //fpr
+     
+     fprintf(stdout,"[init] thread pool started");
 
      recv_send rs_tool;
 
@@ -71,14 +73,19 @@ int main(int argc,char* argv[]){
 
                     epoll_main.del(result.fd);
                     connection_remove(result.fd);
-                    //fpr 移除完成  
+                    fprintf(stdout,"[close] fd=%d closed successfully as requested",result.fd);
                     continue;
 
                 }
                 Connection* conn=connection_get(result.fd);
                 if(conn==NULL){
-                    //fpr连接关闭
+                    fprintf(stdout,"[error] connection closed");//---------------?
                     continue;
+                }
+                // 登录成功的结果带有 user_id, 把连接绑定为该用户
+                if(result.user_id != 0){
+                    conn->set_user_id(result.user_id);
+                    fprintf(stdout, "[bind] fd=%d -> user=%u\n", result.fd, result.user_id);
                 }
                 if(result.data.empty()){
                     //fpr

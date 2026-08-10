@@ -53,31 +53,42 @@ TaskResult on_login(const Task & task, const char* body, size_t body_len) {
  
 
 //demo---
- 
+
+    const uint32_t uid = 10086;
+
     protocol::LoginResponse resp;
     resp.set_err(protocol::ERR_SUCCESS);
-    resp.set_userid(10086);
+    resp.set_userid(uid);
 
-//------- ' 
- 
-    return TaskResult{task.fd, build_packet(protocol::MSG_TYPE_LOGIN_RESP, resp), false};
+//------- '
+
+    // 登录成功后把连接绑定到该用户 id, 后续 chat 等请求才能识别身份
+    return TaskResult{task.fd, build_packet(protocol::MSG_TYPE_LOGIN_RESP, resp), false, uid};
 }
   
 
 TaskResult on_chat(const Task& task, const char* body, size_t body_len) {
     protocol::ChatRequest req;
 
-    if (!req.ParseFromArray(body, static_cast<int>(body_len))) { 
+    if (!req.ParseFromArray(body, static_cast<int>(body_len))) {
         return TaskResult{task.fd, {}, true};
-    }   
-  
+    }
+
+    // 未登录(连接未绑定用户)时不允许发消息
+    if (task.user_id == 0) {
+        protocol::ChatResponse resp;
+        resp.set_err(protocol::ERR_NOT_LOGGED_IN);
+        resp.set_msg_id(0);
+        return TaskResult{task.fd, build_packet(protocol::MSG_TYPE_CHAT_RESP, resp), false};
+    }
+
     fprintf(stdout, "[handler] chat: user=%u -> %u: %s\n",
             task.user_id, req.receiver_id(), req.content().c_str());
-  
-//demo-- 
-    protocol::ChatResponse resp;  
-    resp.set_err(protocol::ERR_SUCCESS);  
-    resp.set_msg_id(1); 
+
+//demo--
+    protocol::ChatResponse resp;
+    resp.set_err(protocol::ERR_SUCCESS);
+    resp.set_msg_id(1);
 //------
 
     return TaskResult{task.fd, build_packet(protocol::MSG_TYPE_CHAT_RESP, resp), false};

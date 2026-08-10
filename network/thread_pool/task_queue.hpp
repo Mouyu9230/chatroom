@@ -34,6 +34,7 @@ struct TaskResult {
     int fd = -1;                // 响应发往哪个 fd（-1 表示无操作）
     std::vector<char> data;     // 完整的响应数据包（header + body）
     bool need_close = false;    // true = 主线程需关闭此连接
+    uint32_t user_id = 0;       // 非 0 时, 主线程把该连接绑定为这个用户(登录成功)
 };
 
  
