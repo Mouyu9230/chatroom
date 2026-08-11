@@ -1,1 +1,0 @@
-/usr/bin/c++ -g CMakeFiles/client.dir/client/client.cpp.o CMakeFiles/client.dir/network/socket/socket.cpp.o "CMakeFiles/client.dir/protocol/(!)message/message.pb.cc.o" -o client  /usr/lib/x86_64-linux-gnu/libprotobuf.so 
