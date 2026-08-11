@@ -39,10 +39,9 @@ message ChatMessage {
   uint64     msg_id   = 1;   // 服务端分配, 全局递增
   uint32     from_id  = 2;   // 发送者 user_id
   uint32     to_id    = 3;   // 接收者 user_id / group_id
-  TargetType to_type  = 4;   // 单聊/群聊 (demo 固定 USER)
-  MsgType    msg_type = 5;   // 文本/图片/文件 (demo 固定 TEXT)
-  string     content  = 6;   // max 4096
-  uint64     ts       = 7;   // 服务端时间戳(毫秒)
+  TargetType to_type  = 4;   // 单聊/群聊
+  string     content  = 5;   // max 4096
+  uint64     ts       = 6;   // 服务端时间戳(毫秒)
 }
 
 // ------------------------------------------------------------

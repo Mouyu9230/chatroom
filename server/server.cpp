@@ -38,12 +38,12 @@ int main(int argc,char* argv[]){
     if(argc>2)ip=argv[2];
 
     connection_init();   
-    fprintf(stdout,"[init] connection pool init successfully");
+    fprintf(stdout,"[init] connection pool init successfully\n");
 
     network::Socket listen_sock;
 
     if(listen_sock.create_server(ip,port)!=0){
-    fprintf(stdout,"[error] failed to create server");
+    fprintf(stdout,"[error] failed to create server\n");
         return 1; 
     }
     listen_sock.set_nonblock();
@@ -51,7 +51,7 @@ int main(int argc,char* argv[]){
 
     network::Epoll epoll_main(1024);
     epoll_main.add(listen_sock.fd(),EPOLLIN);
-    fprintf(stdout,"[init] epoll created successfully fd=%d",listen_sock.fd());
+    fprintf(stdout,"[init] epoll created successfully fd=%d\n",listen_sock.fd());
 
      ThreadPool pool;
      pool.start([](Task task)->TaskResult{
@@ -59,7 +59,7 @@ int main(int argc,char* argv[]){
         return handler::handle_task(task);
      });
      
-     fprintf(stdout,"[init] thread pool started");
+     fprintf(stdout,"[init] thread pool started\n");
 
      recv_send rs_tool;
 
@@ -73,13 +73,13 @@ int main(int argc,char* argv[]){
 
                     epoll_main.del(result.fd);
                     connection_remove(result.fd);
-                    fprintf(stdout,"[close] fd=%d closed successfully as requested",result.fd);
+                    fprintf(stdout,"[close] fd=%d closed successfully as requested\n",result.fd);
                     continue;
 
                 }
                 Connection* conn=connection_get(result.fd);
                 if(conn==NULL){
-                    fprintf(stdout,"[error] connection closed");//---------------?
+                    fprintf(stdout,"[error] connection closed\n");//---------------?
                     continue;
                 }
                 // 登录成功的结果带有 user_id, 把连接绑定为该用户
@@ -183,7 +183,7 @@ int main(int argc,char* argv[]){
                     task.user_id = conn->user_id();
                     task. data.resize(total_len);
 
-                    std::size_t packet_len = 0;
+                    std::size_t packet_len = 0; 
                     int fetch_ret = rs_tool.FetchPacket(*conn, task.data.data(), packet_len);
                     if (fetch_ret == 0 && packet_len > 0) {
                         pool.submit(std::move(task));
@@ -197,11 +197,11 @@ int main(int argc,char* argv[]){
                 int ret = rs_tool.Send(*conn);
                 if (ret < 0) {
                     epoll_main.del(ev_data_fd);
-                    connection_remove(ev_data_fd);
+                    connection_remove(ev_data_fd); 
                     fprintf(stdout, "[close] fd=%d (send error)\n", ev_data_fd);
-                    continue;
-                } 
- 
+                    continue; 
+                }     
+    
                 // 发送缓冲区已空 关闭写监听，避免 epoll 空转
                 if (conn->send_length() == 0) {
                     epoll_main.mod(ev_data_fd, EPOLLIN);

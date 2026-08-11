@@ -33,17 +33,14 @@ enum ErrCode {
   // 未来: ERR_OFFLINE / ERR_TOO_FREQUENT / ERR_FORBIDDEN ...
 }
 
-// 用户公开信息(脱敏后的对外视图)
+// 用户公开信息
 message UserInfo {
   uint32 user_id    = 1;
   string nickname   = 2;   // max 64
-  string avatar     = 3;   // 未来: 头像地址
-  uint64 created_at = 4;   // 未来: 注册时间(unix 秒)
-  bool   online     = 5;   // 未来: 在线状态
+  uint64 created_at = 3;  
+  bool   online     = 4;   
 }
-
-// ------------------------------------------------------------
-//  认证 (demo 必需)
+// ------------------------------------------------------------     
 // ------------------------------------------------------------
 
 // 注册

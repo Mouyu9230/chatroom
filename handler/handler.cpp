@@ -82,7 +82,7 @@ TaskResult on_chat(const Task& task, const char* body, size_t body_len) {
         return TaskResult{task.fd, build_packet(protocol::MSG_TYPE_CHAT_RESP, resp), false};
     }
 
-    fprintf(stdout, "[handler] chat: user=%u -> %u: %s\n",
+    fprintf(     stdout, "[handler] chat: user=%u -> %u: %s\n",
             task.user_id, req.receiver_id(), req.content().c_str());
 
 //demo--
