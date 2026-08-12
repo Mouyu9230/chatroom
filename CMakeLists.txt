@@ -22,7 +22,7 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(MYSQL REQUIRED IMPORTED_TARGET mysqlclient)
 
 # ---- 源码 ----
-# 预生成的 protobuf 文件(user/chat 域; message.pb 已弃用不再编译)
+# 预生成的 protobuf 文件(user/chat 域)
 set(PROTO_PB
     "protocol/user/user.pb.cc"
     "protocol/chat/chat.pb.cc"
