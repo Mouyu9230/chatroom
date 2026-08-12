@@ -29,12 +29,21 @@ struct Task {
 };
 
 
+// 线程池业务处理过程中, 需要主动推送给其它在线用户的包
+// (如 ChatNotify)。主线程按 to_user_id 查在线表找到其 fd 后转发。
+struct PendingPush {
+    uint32_t to_user_id = 0;    // 目标用户 id
+    std::vector<char> data;     // 完整推送包（header + body）
+};
+
 //线程池处理完业务后，返回响应数据和目标fd
 struct TaskResult {
     int fd = -1;                // 响应发往哪个 fd（-1 表示无操作）
     std::vector<char> data;     // 完整的响应数据包（header + body）
     bool need_close = false;    // true = 主线程需关闭此连接
     uint32_t user_id = 0;       // 非 0 时, 主线程把该连接绑定为这个用户(登录成功)
+    bool unbind_user = false;   // true = 主线程把该连接与当前用户解绑(登出), 不关闭连接
+    std::vector<PendingPush> pushes;  // 需推送给其它在线用户的包
 };
 
  

@@ -1,0 +1,5 @@
+# 告诉 clangd 编译数据库的位置(CMake 导出到 build/compile_commands.json)。
+# 否则 clangd 拿不到 -I protocol/user, 解析 chat.pb.h 里的
+# #include "user.pb.h" 时会报"找不到"。
+CompileFlags:
+  CompilationDatabase: build

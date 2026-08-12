@@ -11,7 +11,8 @@ package protocol.user;
 //
 //  说明: 本文件按『demo 可跑 + 未来可扩』设计。
 //    - demo 必需: Register / Login / Logout / Heartbeat
-//    - 未来扩展(已定义占位, 暂不实现): Cancel / Friend* / UserStatusNotify
+//    - 好友系统: 申请 + 手动回复消息 (FriendRequest / FriendPendingList)
+//    - 未来扩展(已定义占位, 暂不实现): Cancel / 好友列表/搜索/通知 / UserStatusNotify
 //
 //  兼容性约束: proto3 字段号不可复用, 新增字段只能向后追加。
 //  未来新增用户侧能力时, 在此文件追加 message + UserPacket 分支,
@@ -30,6 +31,7 @@ enum ErrCode {
   ERR_NOT_FRIEND     = 7;
   ERR_ALREADY_FRIEND = 8;
   ERR_BLOCKED        = 9;
+  ERR_REQUEST_PENDING = 10;  // 已有未处理的加好友申请 (防重复申请)
   // 未来: ERR_OFFLINE / ERR_TOO_FREQUENT / ERR_FORBIDDEN ...
 }
 
@@ -94,19 +96,41 @@ message HeartbeatReq  {}
 message HeartbeatResp {}
 
 // ------------------------------------------------------------
-//  好友系统 (未来扩展占位)
+//  好友系统 —— 申请 + 手动回复消息
+//
+//  流程: A 向 B 发起申请 → B 拉取待处理列表 → B 向 A 手动发送
+//  一条聊天消息即视为接受 (服务器侧据此建立好友关系)。
+//  不区分申请中的状态, FriendCheck 只回答"是否为好友"。
+//  重复申请命中 ERR_REQUEST_PENDING。
 // ------------------------------------------------------------
 
-message FriendAddRequest {
+// 发起加好友申请
+message FriendRequestRequest {
   uint32 friend_id = 1;
+  string remark    = 2;   // 验证消息, max 128
 }
 
-message FriendAddResponse {
+message FriendRequestResponse {
   ErrCode  err       = 1;
   uint32   friend_id = 2;
-  string   nickname  = 3;
 }
 
+// 待处理申请列表 (别人申请了我, 待我处理)
+message FriendPendingListRequest {}
+
+message FriendPendingItem {
+  uint32 friend_id = 1;
+  string nickname  = 2;
+  string remark    = 3;
+  uint64 ts        = 4;   // 申请时间 (unix 秒)
+}
+
+message FriendPendingListResponse {
+  repeated FriendPendingItem items = 1;
+  ErrCode err                    = 2;   // 错误码(与其它响应保持一致)
+}
+
+// 删除好友
 message FriendDelRequest {
   uint32 friend_id = 1;
 }
@@ -115,16 +139,18 @@ message FriendDelResponse {
   ErrCode err = 1;
 }
 
+// 查询是否好友
 message FriendCheckRequest {
   uint32 friend_id = 1;
 }
 
 message FriendCheckResponse {
-  ErrCode err        = 1;
-  bool    is_friend  = 2;
-  bool    is_blocked = 3;
+  ErrCode  err       = 1;
+  bool     is_friend = 2;
+  string   nickname  = 3;   // 好友的昵称
 }
 
+// 拉黑 / 取消拉黑
 message FriendBlockRequest {
   uint32 friend_id = 1;
   bool   block     = 2;
@@ -160,17 +186,19 @@ message UserPacket {
     LogoutResponse      logout_resp       = 6;
     CancelRequest       cancel_req        = 7;
     CancelResponse      cancel_resp       = 8;
-    HeartbeatReq        heartbeat_req     = 9;
-    HeartbeatResp       heartbeat_resp    = 10;
-    FriendAddRequest    friend_add_req    = 11;
-    FriendAddResponse   friend_add_resp   = 12;
-    FriendDelRequest    friend_del_req    = 13;
-    FriendDelResponse   friend_del_resp   = 14;
-    FriendCheckRequest  friend_check_req  = 15;
-    FriendCheckResponse friend_check_resp = 16;
-    FriendBlockRequest  friend_block_req  = 17;
-    FriendBlockResponse friend_block_resp = 18;
-    SystemNotify        system_notify     = 19;
-    UserStatusNotify    user_status_notify = 20;
+    HeartbeatReq        heartbeat_req          = 9;
+    HeartbeatResp       heartbeat_resp         = 10;
+    FriendRequestRequest    friend_request_req     = 11;
+    FriendRequestResponse   friend_request_resp    = 12;
+    FriendPendingListRequest  friend_pending_list_req  = 13;
+    FriendPendingListResponse friend_pending_list_resp = 14;
+    FriendDelRequest    friend_del_req        = 15;
+    FriendDelResponse   friend_del_resp       = 16;
+    FriendCheckRequest  friend_check_req      = 17;
+    FriendCheckResponse friend_check_resp     = 18;
+    FriendBlockRequest  friend_block_req      = 19;
+    FriendBlockResponse friend_block_resp     = 20;
+    SystemNotify        system_notify         = 21;
+    UserStatusNotify    user_status_notify    = 22;
   }
 }

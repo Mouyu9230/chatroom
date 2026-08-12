@@ -18,19 +18,20 @@ int recv_send::Recv(Connection& conn) {//读数据到接收缓冲区
     }
 
     ssize_t n = read(conn.fd(), buf + buf_len, cap - buf_len);
-    if(n > 0){
+    if (n > 0) {
         conn.set_recv_length(buf_len + n);
-    }else if(n == 0){
-        // 连接关闭
-        return 0;
-    }else{
-        if(errno == EAGAIN || errno == EWOULDBLOCK) {
-            return 0;   // 非阻塞下无数据可读，不算错误
-        }
-        return -1;
+        return n;
     }
-
-    return n;
+    if (n == 0) {
+        // 连接关闭 (EOF)
+        return 0;
+    }
+    // n < 0
+    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+        // 非阻塞下无数据可读: 正常, 不是错误也不该关闭 (与 EOF 的 0 区分)
+        return -2;
+    }
+    return -1;
 }
 
 int recv_send::Send(Connection& conn) {//从发送缓冲区发送数据

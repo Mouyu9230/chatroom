@@ -1,7 +1,5 @@
 #pragma once
 
-#include "(!)message/message.pb.h"
-
 #include <cstdint>
 
 namespace protocol {
@@ -19,12 +17,22 @@ const uint16_t MAGIC_NUM = 0x9230;
 
 // ============================================================
 //  消息头，固定 8 字节，布局: magic(2) + version(1) + type(1) + body_len(4)
+//
+//  type 字段自 v2 起表示"域"(domain), 不再承载扁平消息类型:
+//    DOMAIN_USER = 1  → body 为 protocol.user.UserPacket(oneof)
+//    DOMAIN_CHAT = 2  → body 为 protocol.chat.ChatPacket(oneof)
+//  具体消息由信封的 oneof 分支区分, 见 user.proto / chat.proto。
 // ============================================================
+enum Domain : uint8_t {
+    DOMAIN_USER = 1,
+    DOMAIN_CHAT = 2,
+};
+
 #pragma pack(1)
 struct packet_header {
     uint16_t magic;
     uint8_t  ver;
-    uint8_t  type;     // MsgType 枚举值, 与 message.proto 同步
+    uint8_t  type;     // Domain 枚举值
     uint32_t body_len;
 };
 #pragma pack()

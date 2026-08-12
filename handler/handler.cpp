@@ -6,11 +6,17 @@
 #include <vector>
 
 #include "../protocol/protocol.hpp"
-#include "../protocol/(!)message/message.pb.h"
+#include "../protocol/user/user.pb.h"
+#include "../protocol/chat/chat.pb.h"
+#include "../database/db_pool.hpp"
+#include "../database/user_db.hpp"
+#include "../database/chat_db.hpp"
 
 namespace handler {
 namespace {
 
+// 组装完整数据包: 8 字节头(header)+ protobuf body。
+// type 自 v2 起为域(protocol::Domain)。
 std::vector<char> build_packet(uint8_t type, const google::protobuf::Message& body) {
     std::string body_str;
     body.SerializeToString(&body_str);
@@ -31,110 +37,317 @@ std::vector<char> build_packet(uint8_t type, const google::protobuf::Message& bo
     return packet;
 }
 
-  
-    
+// 组一个 user 域响应包
+std::vector<char> user_packet(const protocol::user::UserPacket& pkt) {
+    return build_packet(protocol::DOMAIN_USER, pkt);
+}
+
+// 组一个 chat 域响应包
+std::vector<char> chat_packet(const protocol::chat::ChatPacket& pkt) {
+    return build_packet(protocol::DOMAIN_CHAT, pkt);
+}
+
+// ------------------------------------------------------------
+//  user 域
+// ------------------------------------------------------------
+
+TaskResult on_register(const Task& task, const protocol::user::RegisterRequest& req) {
+    protocol::user::UserPacket resp;
+    auto* r = resp.mutable_register_resp();
+
+    DbGuard g(db_pool());
+    if (!g) {
+        r->set_err(protocol::user::ERR_SYSTEM);
+        return {task.fd, user_packet(resp), false};
+    }
+    uint32_t user_id = 0;
+    int err = db::user::register_user(*g, req.username(), req.password(), req.nickname(), user_id);
+    r->set_err(static_cast<protocol::user::ErrCode>(err));
+    r->set_user_id(user_id);
+    fprintf(stdout, "[handler] register username=%s -> err=%d uid=%u\n",
+            req.username().c_str(), err, user_id);
+    return {task.fd, user_packet(resp), false};
+}
+
+TaskResult on_login(const Task& task, const protocol::user::LoginRequest& req) {
+    protocol::user::UserPacket resp;
+    auto* r = resp.mutable_login_resp();
+
+    DbGuard g(db_pool());
+    if (!g) {
+        r->set_err(protocol::user::ERR_SYSTEM);
+        return {task.fd, user_packet(resp), false};
+    }
+    protocol::user::UserInfo info;
+    int err = db::user::login_user(*g, req.username(), req.password(), info);
+    r->set_err(static_cast<protocol::user::ErrCode>(err));
+    if (err == protocol::user::ERR_SUCCESS) {
+        r->set_user_id(info.user_id());
+        *r->mutable_user() = info;
+        fprintf(stdout, "[handler] login ok: user=%u nick=%s\n",
+                info.user_id(), info.nickname().c_str());
+        // user_id 非 0: 主线程把该连接绑定为该用户
+        return {task.fd, user_packet(resp), false, info.user_id()};
+    }
+    return {task.fd, user_packet(resp), false};
+}
+
+TaskResult on_logout(const Task& task, const protocol::user::LogoutRequest& req) {
+    protocol::user::UserPacket resp;
+    auto* r = resp.mutable_logout_resp();
+
+    DbGuard g(db_pool());
+    int err = protocol::user::ERR_SUCCESS;
+    if (!g) err = protocol::user::ERR_SYSTEM;
+    else err = db::user::logout_user(*g, req.user_id());
+    r->set_err(static_cast<protocol::user::ErrCode>(err));
+
+    // 返回 unbind_user: 主线程解绑在线表, 但保持连接不断
+    return {task.fd, user_packet(resp), false, 0, true};
+}
+
 TaskResult on_heartbeat(const Task& task) {
-    protocol::HeartbeatResp body;
-    return TaskResult{task.fd, build_packet(protocol::MSG_TYPE_HEARTBEAT_RESP, body), false};
-}  
- 
-
-TaskResult on_login(const Task & task, const char* body, size_t body_len) {
-
-    protocol::LoginRequest req;
-
-    if (!req.ParseFromArray(body, static_cast<int>(body_len))) {
-
-        //失败断开连接
-        return TaskResult{task.fd, {}, true}; 
-
-    }
-    //  
- 
-
-//demo---
-
-    const uint32_t uid = 10086;
-
-    protocol::LoginResponse resp;
-    resp.set_err(protocol::ERR_SUCCESS);
-    resp.set_userid(uid);
-
-//------- '
-
-    // 登录成功后把连接绑定到该用户 id, 后续 chat 等请求才能识别身份
-    return TaskResult{task.fd, build_packet(protocol::MSG_TYPE_LOGIN_RESP, resp), false, uid};
+    protocol::user::UserPacket resp;
+    resp.mutable_heartbeat_resp();
+    return {task.fd, user_packet(resp), false};
 }
-  
 
-TaskResult on_chat(const Task& task, const char* body, size_t body_len) {
-    protocol::ChatRequest req;
-
-    if (!req.ParseFromArray(body, static_cast<int>(body_len))) {
-        return TaskResult{task.fd, {}, true};
-    }
-
-    // 未登录(连接未绑定用户)时不允许发消息
+TaskResult on_friend_request(const Task& task, const protocol::user::FriendRequestRequest& req) {
+    protocol::user::UserPacket resp;
+    auto* r = resp.mutable_friend_request_resp();
     if (task.user_id == 0) {
-        protocol::ChatResponse resp;
-        resp.set_err(protocol::ERR_NOT_LOGGED_IN);
-        resp.set_msg_id(0);
-        return TaskResult{task.fd, build_packet(protocol::MSG_TYPE_CHAT_RESP, resp), false};
+        r->set_err(protocol::user::ERR_NOT_LOGGED_IN);
+        return {task.fd, user_packet(resp), false};
     }
-
-    fprintf(     stdout, "[handler] chat: user=%u -> %u: %s\n",
-            task.user_id, req.receiver_id(), req.content().c_str());
-
-//demo--
-    protocol::ChatResponse resp;
-    resp.set_err(protocol::ERR_SUCCESS);
-    resp.set_msg_id(1);
-//------
-
-    return TaskResult{task.fd, build_packet(protocol::MSG_TYPE_CHAT_RESP, resp), false};
+    DbGuard g(db_pool());
+    int err = protocol::user::ERR_SYSTEM;
+    if (g) err = db::user::friend_request(*g, task.user_id, req.friend_id(), req.remark());
+    r->set_err(static_cast<protocol::user::ErrCode>(err));
+    r->set_friend_id(req.friend_id());
+    return {task.fd, user_packet(resp), false};
 }
 
-}   
+TaskResult on_friend_pending_list(const Task& task, const protocol::user::FriendPendingListRequest&) {
+    protocol::user::UserPacket resp;
+    auto* r = resp.mutable_friend_pending_list_resp();
+    if (task.user_id == 0) {
+        r->set_err(protocol::user::ERR_NOT_LOGGED_IN);
+        return {task.fd, user_packet(resp), false};
+    }
+    DbGuard g(db_pool());
+    int err = protocol::user::ERR_SYSTEM;
+    std::vector<protocol::user::FriendPendingItem> items;
+    if (g) err = db::user::friend_pending_list(*g, task.user_id, items);
+    r->set_err(static_cast<protocol::user::ErrCode>(err));
+    for (auto& it : items) *r->mutable_items()->Add() = it;
+    return {task.fd, user_packet(resp), false};
+}
 
+TaskResult on_friend_del(const Task& task, const protocol::user::FriendDelRequest& req) {
+    protocol::user::UserPacket resp;
+    auto* r = resp.mutable_friend_del_resp();
+    if (task.user_id == 0) {
+        r->set_err(protocol::user::ERR_NOT_LOGGED_IN);
+        return {task.fd, user_packet(resp), false};
+    }
+    DbGuard g(db_pool());
+    int err = protocol::user::ERR_SYSTEM;
+    if (g) err = db::user::friend_del(*g, task.user_id, req.friend_id());
+    r->set_err(static_cast<protocol::user::ErrCode>(err));
+    return {task.fd, user_packet(resp), false};
+}
 
+TaskResult on_friend_check(const Task& task, const protocol::user::FriendCheckRequest& req) {
+    protocol::user::UserPacket resp;
+    auto* r = resp.mutable_friend_check_resp(); 
+    if (task.user_id == 0) {
+        r->set_err(protocol::user::ERR_NOT_LOGGED_IN);
+        return {task.fd, user_packet(resp), false};
+    }
+    DbGuard g(db_pool());
+    int err = protocol::user::ERR_SYSTEM;
+    bool is_friend = false;         
+    std::string nickname;
+    if (g) err = db::user::friend_check(*g, task.user_id, req.friend_id(), is_friend, nickname);
+    r->set_err(static_cast<protocol::user::ErrCode>(err));
+    r->set_is_friend(is_friend);
+    r->set_nickname(nickname); 
+    return {task.fd, user_packet(resp), false};
+}
 
+TaskResult on_friend_block(const Task& task, const protocol::user::FriendBlockRequest& req) {
+    protocol::user::UserPacket resp;
+    auto* r = resp.mutable_friend_block_resp();
+    if (task.user_id == 0) {
+        r->set_err(protocol::user::ERR_NOT_LOGGED_IN);
+        return {task.fd, user_packet(resp), false};
+    }
+    DbGuard g(db_pool());
+    int err = protocol::user::ERR_SYSTEM;
+    if (g) err = db::user::friend_block(*g, task.user_id, req.friend_id(), req.block());
+    r->set_err(static_cast<protocol::user::ErrCode>(err));
+    return {task.fd, user_packet(resp), false};
+}
+
+// 注销账号: proto 标注为"未来扩展占位", 此处返回未实现。
+TaskResult on_cancel(const Task& task, const protocol::user::CancelRequest&) {
+    protocol::user::UserPacket resp;
+    auto* r = resp.mutable_cancel_resp();
+    r->set_err(protocol::user::ERR_SYSTEM);  // TODO: 未实现
+    return {task.fd, user_packet(resp), false};
+}
+
+TaskResult on_user_packet(const Task& task, const char* body, size_t body_len) {
+    protocol::user::UserPacket pkt;
+    if (!pkt.ParseFromArray(body, static_cast<int>(body_len))) {
+        fprintf(stderr, "[handler] bad user packet body\n");
+        return {task.fd, {}, true};
+    }
+    switch (pkt.body_case()) {
+        case protocol::user::UserPacket::kRegisterReq:
+            return on_register(task, pkt.register_req());
+        case protocol::user::UserPacket::kLoginReq:
+            return on_login(task, pkt.login_req());
+        case protocol::user::UserPacket::kLogoutReq:
+            return on_logout(task, pkt.logout_req());
+        case protocol::user::UserPacket::kHeartbeatReq:
+            return on_heartbeat(task);
+        case protocol::user::UserPacket::kFriendRequestReq:
+            return on_friend_request(task, pkt.friend_request_req());
+        case protocol::user::UserPacket::kFriendPendingListReq:
+            return on_friend_pending_list(task, pkt.friend_pending_list_req());
+        case protocol::user::UserPacket::kFriendDelReq:
+            return on_friend_del(task, pkt.friend_del_req());
+        case protocol::user::UserPacket::kFriendCheckReq:
+            return on_friend_check(task, pkt.friend_check_req());
+        case protocol::user::UserPacket::kFriendBlockReq:
+            return on_friend_block(task, pkt.friend_block_req());
+        case protocol::user::UserPacket::kCancelReq:
+            return on_cancel(task, pkt.cancel_req());
+        default:
+            fprintf(stderr, "[handler] unknown user packet case: %d\n",
+                    static_cast<int>(pkt.body_case()));
+            return {task.fd, {}, true};
+    }
+}
+
+// ------------------------------------------------------------
+//  chat 域
+// ------------------------------------------------------------
+
+TaskResult on_chat_send(const Task& task, const protocol::chat::ChatSendRequest& req) {
+    protocol::chat::ChatPacket resp;
+    auto* r = resp.mutable_send_resp();
+    if (task.user_id == 0) {
+        r->set_err(protocol::user::ERR_NOT_LOGGED_IN);
+        return {task.fd, chat_packet(resp), false};
+    }
+
+    DbGuard g(db_pool());
+    if (!g) {
+        r->set_err(protocol::user::ERR_SYSTEM);
+        return {task.fd, chat_packet(resp), false};
+    }
+    // 接收方必须存在
+    if (!db::user::user_exists(*g, req.to_id())) {
+        r->set_err(protocol::user::ERR_INVALID_USER);
+        return {task.fd, chat_packet(resp), false};
+    }
+
+    // 好友规则: 若 to 之前申请了 from, from 主动发私聊即视为接受
+    db::user::friend_accept_by_chat(*g, task.user_id, req.to_id());
+
+    uint64_t msg_id = 0, ts = 0;
+    int err = db::chat::save_message(*g, task.user_id, req.to_id(),
+                                     protocol::chat::TARGET_TYPE_USER, req.content(),
+                                     msg_id, ts);
+    r->set_err(static_cast<protocol::user::ErrCode>(err));
+    r->set_msg_id(msg_id);
+    r->set_server_ts(ts);
+    fprintf(stdout, "[handler] chat: user=%u -> %u: %s (msg_id=%llu)\n",
+            task.user_id, req.to_id(), req.content().c_str(),
+            static_cast<unsigned long long>(msg_id));
+
+    TaskResult result{task.fd, chat_packet(resp), false};
+    if (err == protocol::user::ERR_SUCCESS) {
+        // 构造 ChatNotify 推给接收方(主线程按 to_user_id 查在线表转发)
+        protocol::chat::ChatPacket push;
+        auto* m = push.mutable_notify()->mutable_msg();
+        m->set_msg_id(msg_id);
+        m->set_from_id(task.user_id);
+        m->set_to_id(req.to_id());
+        m->set_to_type(protocol::chat::TARGET_TYPE_USER);
+        m->set_content(req.content());
+        m->set_ts(ts);
+        result.pushes.push_back({req.to_id(), chat_packet(push)});
+    }
+    return result;
+}
+
+TaskResult on_chat_history(const Task& task, const protocol::chat::ChatHistoryRequest& req) {
+    protocol::chat::ChatPacket resp;
+    auto* r = resp.mutable_history_resp();
+    if (task.user_id == 0) {
+        r->set_err(protocol::user::ERR_NOT_LOGGED_IN);
+        return {task.fd, chat_packet(resp), false};
+    }
+    DbGuard g(db_pool());
+    int err = protocol::user::ERR_SYSTEM;
+    std::vector<protocol::chat::ChatMessage> msgs;
+    if (g) err = db::chat::query_history(*g, task.user_id, req.target_id(),
+                                         req.after_msg_id(), req.limit(), msgs);
+    r->set_err(static_cast<protocol::user::ErrCode>(err));
+    for (auto& m : msgs) *r->mutable_messages()->Add() = m;
+    return {task.fd, chat_packet(resp), false};
+}
+
+TaskResult on_chat_packet(const Task& task, const char* body, size_t body_len) {
+    protocol::chat::ChatPacket pkt;
+    if (!pkt.ParseFromArray(body, static_cast<int>(body_len))) {
+        fprintf(stderr, "[handler] bad chat packet body\n");
+        return {task.fd, {}, true};
+    }
+    switch (pkt.body_case()) {
+        case protocol::chat::ChatPacket::kSendReq:
+            return on_chat_send(task, pkt.send_req());
+        case protocol::chat::ChatPacket::kHistoryReq:
+            return on_chat_history(task, pkt.history_req());
+        case protocol::chat::ChatPacket::kReadAck:
+            // 已读回执: 暂无读取状态表, 直接忽略
+            return {task.fd, {}, false};
+        default:
+            fprintf(stderr, "[handler] unknown chat packet case: %d\n",
+                    static_cast<int>(pkt.body_case()));
+            return {task.fd, {}, true};
+    }
+}
+
+}  // namespace
 
 // ------------------------------------------------------------
 TaskResult handle_task(const Task& task) {
-
-    if (task.data.size() < sizeof(protocol::packet_header)) { 
+    if (task.data.size() < sizeof(protocol::packet_header)) {
         fprintf(stderr, "[handler] packet too small: %zu\n", task.data.size());
-          
-        return TaskResult{task.fd, {}, true};
+        return {task.fd, {}, true};
     }
 
     const auto* hdr = reinterpret_cast<const protocol::packet_header*>(task.data.data());
-
-    
     if (hdr->magic != protocol::MAGIC_NUM) {
         fprintf(stderr, "[handler] bad magic: 0x%04x\n", hdr->magic);
-        return TaskResult{task.fd, {}, true};
+        return {task.fd, {}, true};
     }
 
-    const char* body     = task.data.data() + sizeof(protocol::packet_header);
+    const char*  body      = task.data.data() + sizeof(protocol::packet_header);
     const size_t body_len = task.data.size() - sizeof(protocol::packet_header);
 
-
     switch (hdr->type) {
-        case protocol::MSG_TYPE_HEARTBEAT_REQ:
-            return on_heartbeat(task);
-
-        case protocol::MSG_TYPE_LOGIN_REQ:
-            return on_login(task, body, body_len);
-
-        case protocol::MSG_TYPE_CHAT_REQ:
-            return on_chat(task, body, body_len);
-
-
-
+        case protocol::DOMAIN_USER:
+            return on_user_packet(task, body, body_len);
+        case protocol::DOMAIN_CHAT:
+            return on_chat_packet(task, body, body_len);
         default:
-            fprintf(stderr, "[handler] unknown type: 0x%02x\n", hdr->type);
-            return TaskResult{task.fd, {}, true};
+            fprintf(stderr, "[handler] unknown domain: 0x%02x\n", hdr->type);
+            return {task.fd, {}, true};
     }
 }
 

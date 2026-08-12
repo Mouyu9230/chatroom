@@ -1,25 +1,27 @@
 #include "client.hpp"
 
 #include "../network/socket/socket.hpp"
-#include "../protocol/(!)message/message.pb.h"
-#include "../handler/handler.hpp"
 
 #include <sys/socket.h>
 #include <unistd.h>
 
 #include <cerrno>
+#include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <mutex>
+#include <queue>
+#include <thread>
 
 // ============================================================
 //  客户端实现
 //
 //  用法: client [port] [ip]   (默认 127.0.0.1:2100)
 //
-//  基础版: 阻塞式 TCP 客户端, 连接后进入交互命令行,
-//  用 login / chat / heartbeat 三个命令逐个触发
-//  handler 中对应的三个处理函数并打印响应。
+//  结构: 后台收包线程常驻读 socket, 实时打印服务端推送
+//  (ChatNotify / SystemNotify / UserStatusNotify); 请求响应入队,
+//  主线程命令循环通过 user_request/chat_request 从队列取回。
 // ============================================================
 
 namespace client {
@@ -62,6 +64,124 @@ bool send_exact(int fd, const char* data, size_t n) {
     return true;
 }
 
+// 阻塞读取一个完整数据包(header + body), 失败/对端关闭返回空 vector
+std::vector<char> read_packet(int fd) {
+    protocol::packet_header hdr;
+    if (!recv_exact(fd, reinterpret_cast<char*>(&hdr), sizeof(hdr))) {
+        return {};
+    }
+    if (hdr.magic != protocol::MAGIC_NUM) {
+        fprintf(stderr, "[client] bad magic: 0x%04x\n", hdr.magic);
+        return {};
+    }
+    if (hdr.body_len > protocol::MAX_BODY_LEN) {
+        fprintf(stderr, "[client] body too large: %u\n", hdr.body_len);
+        return {};
+    }
+    std::vector<char> packet(sizeof(hdr) + hdr.body_len);
+    std::memcpy(packet.data(), &hdr, sizeof(hdr));
+    if (hdr.body_len > 0) {
+        if (!recv_exact(fd, packet.data() + sizeof(hdr), hdr.body_len)) {
+            return {};
+        }
+    }
+    return packet;
+}
+
+// 由请求分支推出应等待的响应分支
+protocol::user::UserPacket::BodyCase expected_user_resp_case(const protocol::user::UserPacket& req) {
+    using P = protocol::user::UserPacket;
+    switch (req.body_case()) {
+        case P::kRegisterReq:          return P::kRegisterResp;
+        case P::kLoginReq:             return P::kLoginResp;
+        case P::kLogoutReq:            return P::kLogoutResp;
+        case P::kHeartbeatReq:         return P::kHeartbeatResp;
+        case P::kFriendRequestReq:     return P::kFriendRequestResp;
+        case P::kFriendPendingListReq: return P::kFriendPendingListResp;
+        case P::kFriendDelReq:         return P::kFriendDelResp;
+        case P::kFriendCheckReq:       return P::kFriendCheckResp;
+        case P::kFriendBlockReq:       return P::kFriendBlockResp;
+        default:                       return P::BODY_NOT_SET;
+    }
+}
+
+protocol::chat::ChatPacket::BodyCase expected_chat_resp_case(const protocol::chat::ChatPacket& req) {
+    using P = protocol::chat::ChatPacket;
+    switch (req.body_case()) {
+        case P::kSendReq:    return P::kSendResp;
+        case P::kHistoryReq: return P::kHistoryResp;
+        default:             return P::BODY_NOT_SET;
+    }
+}
+
+// ------------------------------------------------------------
+//  后台收包线程: 常驻读 socket
+//    推送类(ChatNotify/SystemNotify/UserStatusNotify) → 实时打印
+//    响应类 → 入队, 由 user_request/chat_request 取回
+// ------------------------------------------------------------
+std::mutex              g_mtx;
+std::condition_variable g_cv;
+std::queue<std::vector<char>> g_queue;   // 待请求函数消费的响应包
+bool g_closed = false;                    // 连接已关闭
+
+void push_packet(std::vector<char> pkt) {
+    std::lock_guard<std::mutex> lk(g_mtx);
+    g_queue.push(std::move(pkt));
+    g_cv.notify_one();
+}
+
+// 取下一个响应包; 连接已关闭返回空
+std::vector<char> pop_packet() {
+    std::unique_lock<std::mutex> lk(g_mtx);
+    g_cv.wait(lk, [] { return g_closed || !g_queue.empty(); });
+    if (g_queue.empty()) return {};
+    auto pkt = std::move(g_queue.front());
+    g_queue.pop();
+    return pkt;
+}
+
+void reader_loop(int fd) {
+    for (;;) {
+        std::vector<char> pkt = read_packet(fd);
+        if (pkt.empty()) {  // 对端关闭 / 出错
+            std::lock_guard<std::mutex> lk(g_mtx);
+            g_closed = true;
+            g_cv.notify_all();
+            return;
+        }
+        auto* hdr = reinterpret_cast<const protocol::packet_header*>(pkt.data());
+        const char* body = pkt.data() + sizeof(*hdr);
+
+        if (hdr->type == protocol::DOMAIN_CHAT) {
+            protocol::chat::ChatPacket cp;
+            if (cp.ParseFromArray(body, hdr->body_len) && cp.has_notify()) {
+                const auto& m = cp.notify().msg();
+                fprintf(stdout, "\n[chat<<] from=%u: %s\n", m.from_id(), m.content().c_str());
+                fflush(stdout);
+                continue;   // 推送已打印, 不入队
+            }
+        } else if (hdr->type == protocol::DOMAIN_USER) {
+            protocol::user::UserPacket up;
+            if (up.ParseFromArray(body, hdr->body_len)) {
+                if (up.has_system_notify()) {
+                    fprintf(stdout, "\n[system] %s\n", up.system_notify().content().c_str());
+                    fflush(stdout);
+                    continue;
+                }
+                if (up.has_user_status_notify()) {
+                    const auto& s = up.user_status_notify();
+                    fprintf(stdout, "\n[status] user=%u online=%d\n", s.user_id(), s.online());
+                    fflush(stdout);
+                    continue;
+                }
+            }
+        }
+
+        // 响应类 → 入队
+        push_packet(std::move(pkt));
+    }
+}
+
 }  // namespace
 
 std::vector<char> build_packet(uint8_t type, const google::protobuf::Message& body) {
@@ -70,7 +190,7 @@ std::vector<char> build_packet(uint8_t type, const google::protobuf::Message& bo
 
     std::vector<char> packet;
     packet.resize(sizeof(protocol::packet_header) + body_str.size());
- 
+
     auto* hdr = reinterpret_cast<protocol::packet_header*>(packet.data());
     hdr->magic    = protocol::MAGIC_NUM;
     hdr->ver      = 1;
@@ -88,81 +208,121 @@ bool send_packet(int fd, const std::vector<char>& packet) {
     return send_exact(fd, packet.data(), packet.size());
 }
 
-std::vector<char> read_packet(int fd) {
-    protocol::packet_header hdr;
-    if (!recv_exact(fd, reinterpret_cast<char*>(&hdr), sizeof(hdr))) {
-        return {};
+void start_reader(int fd) {
+    {
+        std::lock_guard<std::mutex> lk(g_mtx);
+        g_closed = false;
+        while (!g_queue.empty()) g_queue.pop();  // 清空历史残留
     }
-    if (hdr.magic != protocol::MAGIC_NUM) {
-        fprintf(stderr, "[client] bad magic: 0x%04x\n", hdr.magic);
-        return {};
-    }
-    if (hdr.body_len > protocol::MAX_BODY_LEN) {
-        fprintf(stderr, "[client] body too large: %u\n", hdr.body_len);
-        return {};
-    }
-
-    std::vector<char> packet(sizeof(hdr) + hdr.body_len);
-    std::memcpy(packet.data(), &hdr, sizeof(hdr));
-    if (hdr.body_len > 0) {
-        if (!recv_exact(fd, packet.data() + sizeof(hdr), hdr.body_len)) {
-            return {};
-        }
-    }
-    return packet;
+    std::thread(reader_loop, fd).detach();
 }
 
-bool request(int fd, uint8_t req_type, const google::protobuf::Message& req,
-             uint8_t expect_type, std::vector<char>& resp_packet) {
-    std::vector<char> packet = build_packet(req_type, req);
+bool user_request(int fd, protocol::user::UserPacket& req, protocol::user::UserPacket& resp) {
+    std::vector<char> packet = build_packet(protocol::DOMAIN_USER, req);
     if (!send_exact(fd, packet.data(), packet.size())) {
         fprintf(stderr, "[client] send failed\n");
         return false;
     }
-
+    protocol::user::UserPacket::BodyCase expect = expected_user_resp_case(req);
     for (;;) {
-        std::vector<char> pkt = read_packet(fd);
+        std::vector<char> pkt = pop_packet();
         if (pkt.empty()) {
-            fprintf(stderr, "[client] read failed / connection closed\n");
+            fprintf(stderr, "[client] connection closed\n");
             return false;
-              }
+        }
         auto* hdr = reinterpret_cast<const protocol::packet_header*>(pkt.data());
-        if (hdr->type == expect_type) {
-            resp_packet = std::move(pkt);
+        if (hdr->type != protocol::DOMAIN_USER) {
+            fprintf(stdout, "[client] <skip> non-user domain=%u\n", hdr->type);
+            continue;
+        }
+        protocol::user::UserPacket r;
+        if (!r.ParseFromArray(pkt.data() + sizeof(*hdr), hdr->body_len)) {
+            fprintf(stdout, "[client] <skip> bad user body\n");
+            continue;
+        }
+        if (r.body_case() == expect) {
+            resp = std::move(r);
             return true;
         }
-        // 其它类型(如未来的系统通知)不是本请求的响应, 打印后继续等
-        fprintf(stdout, "[client] <skip> unexpected type=0x%02x body_len=%u\n",
-                hdr->type, hdr->body_len);
+        fprintf(stdout, "[client] <skip> user case=%d\n", static_cast<int>(r.body_case()));
+    }
+}
+
+bool chat_request(int fd, protocol::chat::ChatPacket& req, protocol::chat::ChatPacket& resp) {
+    std::vector<char> packet = build_packet(protocol::DOMAIN_CHAT, req);
+    if (!send_exact(fd, packet.data(), packet.size())) {
+        fprintf(stderr, "[client] send failed\n");
+        return false;
+    }
+    protocol::chat::ChatPacket::BodyCase expect = expected_chat_resp_case(req);
+    for (;;) {
+        std::vector<char> pkt = pop_packet();
+        if (pkt.empty()) {
+            fprintf(stderr, "[client] connection closed\n");
+            return false;
+        }
+        auto* hdr = reinterpret_cast<const protocol::packet_header*>(pkt.data());
+        if (hdr->type != protocol::DOMAIN_CHAT) {
+            fprintf(stdout, "[client] <skip> non-chat domain=%u\n", hdr->type);
+            continue;
+        }
+        protocol::chat::ChatPacket r;
+        if (!r.ParseFromArray(pkt.data() + sizeof(*hdr), hdr->body_len)) {
+            fprintf(stdout, "[client] <skip> bad chat body\n");
+            continue;
+        }
+        if (r.body_case() == expect) {
+            resp = std::move(r);
+            return true;
+        }
+        fprintf(stdout, "[client] <skip> chat case=%d\n", static_cast<int>(r.body_case()));
     }
 }
 
 }  // namespace client
 
+// ------------------------------------------------------------
+//  命令行
+// ------------------------------------------------------------
 
+namespace {
 
-
-static void print_help() {
-    fprintf(stdout,
-            "commands:\n"
-            "  login <username> <password>  send login, print LoginResponse\n"
-            "  chat  <receiver_id> <text>   send chat, print ChatResponse\n"
-            "  heartbeat                    send heartbeat, print HeartbeatResp\n"
-            "  help                         show this help\n"
-            "  quit / exit                  close connection and exit\n");
+const char* err_name(int e) {
+    switch (e) {
+        case 0: return "SUCCESS";
+        case 1: return "SYSTEM";
+        case 2: return "INVALID_PARAM";
+        case 3: return "INVALID_USER";
+        case 4: return "USER_EXISTS";
+        case 5: return "NOT_LOGGED_IN";
+        case 6: return "FULL";
+        case 7: return "NOT_FRIEND";
+        case 8: return "ALREADY_FRIEND";
+        case 9: return "BLOCKED";
+        case 10: return "REQUEST_PENDING";
+        default: return "?";
+    }
 }
 
+void print_help() {
+    fprintf(stdout,
+            "commands:\n"
+            "  register <username> <password> <nickname>\n"
+            "  login    <username> <password>\n"
+            "  logout\n"
+            "  heartbeat\n"
+            "  friend req     <friend_id> [remark]\n"
+            "  friend pending\n"
+            "  friend del     <friend_id>\n"
+            "  friend check   <friend_id>\n"
+            "  friend block   <friend_id> [on|off]\n"
+            "  chat     <to_id> <text>\n"
+            "  history  <target_id> [limit]\n"
+            "  help\n"
+            "  quit / exit\n");
+}
 
-
-
-
-
-
-
-
-
-
-
+}  // namespace
 
 int main(int argc, char* argv[]) {
     const char* ip = "127.0.0.1";
@@ -179,98 +339,224 @@ int main(int argc, char* argv[]) {
     fprintf(stdout, "[client] connected to %s:%d (fd=%d)\n", ip, port, fd);
     print_help();
 
- 
-    char line[1024];
-    while(1){
+    client::start_reader(fd);   // 后台线程常驻收包, 推送实时打印
 
-        fprintf(stdout, "\nclient> "); 
-        if (fgets(line, sizeof(line), stdin) == nullptr) {
-            break;  // EOF
-        }
-        line[strcspn(line, "\n")] = '\0';  // 去掉换行
+    uint32_t g_uid = 0;  // 当前登录用户 id(仅用于 logout)
+
+    char line[1024];
+    while (1) {
+        fprintf(stdout, "\nclient> ");
+        fflush(stdout);
+        if (fgets(line, sizeof(line), stdin) == nullptr) break;  // EOF
+        line[strcspn(line, "\n")] = '\0';
 
         char cmd[64] = {0};
-        if (sscanf(line, "%63s", cmd) != 1) {
-            continue;
-        }
-
-
-//指令判断/处理-------
-
+        if (sscanf(line, "%63s", cmd) != 1) continue;
 
         if (strcmp(cmd, "help") == 0) {
-
             print_help();
 
         } else if (strcmp(cmd, "quit") == 0 || strcmp(cmd, "exit") == 0) {
-
             break;
 
-        } else if (strcmp(cmd, "login") == 0) {
+        } else if (strcmp(cmd, "register") == 0) {
+            char username[128] = {0}, password[128] = {0}, nickname[128] = {0};
+            if (sscanf(line, "%*s %127s %127s %127s", username, password, nickname) != 3) {
+                fprintf(stderr, "usage: register <username> <password> <nickname>\n");
+                continue;
+            }
+            protocol::user::UserPacket req;
+            auto* r = req.mutable_register_req();
+            r->set_username(username);
+            r->set_password(password);
+            r->set_nickname(nickname);
+            protocol::user::UserPacket resp;
+            if (client::user_request(fd, req, resp)) {
+                const auto& rr = resp.register_resp();
+                fprintf(stdout, "[register] err=%s(%d) user_id=%u\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()), rr.user_id());
+            }
 
+        } else if (strcmp(cmd, "login") == 0) {
             char username[128] = {0}, password[128] = {0};
             if (sscanf(line, "%*s %127s %127s", username, password) != 2) {
                 fprintf(stderr, "usage: login <username> <password>\n");
                 continue;
             }
-            protocol::LoginRequest req;
-            req.set_username(username);
-            req.set_password(password);
-
-            std::vector<char> resp;
-            if (client::request(fd, protocol::MSG_TYPE_LOGIN_REQ, req,
-                                protocol::MSG_TYPE_LOGIN_RESP, resp)) {
-                auto* hdr = reinterpret_cast<const protocol::packet_header*>(resp.data());
-                protocol::LoginResponse rsp;
-                if (rsp.ParseFromArray(resp.data() + sizeof(*hdr), hdr->body_len)) {
-                    fprintf(stdout, "[login] err=%d userid=%u\n",
-                            static_cast<int>(rsp.err()), rsp.userid());
-                } else {
-                    fprintf(stderr, "[login] bad response body\n");
+            protocol::user::UserPacket req;
+            auto* r = req.mutable_login_req();
+            r->set_username(username);
+            r->set_password(password);
+            protocol::user::UserPacket resp;
+            if (client::user_request(fd, req, resp)) {
+                const auto& rr = resp.login_resp();
+                fprintf(stdout, "[login] err=%s(%d)", err_name(rr.err()), static_cast<int>(rr.err()));
+                if (rr.err() == protocol::user::ERR_SUCCESS) {
+                    g_uid = rr.user_id();
+                    fprintf(stdout, " user_id=%u nickname=%s",
+                            rr.user_id(), rr.user().nickname().c_str());
                 }
+                fprintf(stdout, "\n");
             }
 
-        } else if (strcmp(cmd, "chat") == 0) {
-            uint32_t receiver_id = 0;
-            char content[4096] = {0};
-            if (sscanf(line, "%*s %u %4095[^\n]", &receiver_id, content) < 1) {
-                fprintf(stderr, "usage: chat <receiver_id> <text>\n");
-                continue;
-            }
-            protocol::ChatRequest req;
-            req.set_receiver_id(receiver_id);
-            req.set_content(content);
-
-            std::vector<char> resp;
-            if (client::request( fd, protocol::MSG_TYPE_CHAT_REQ, req,
-                                protocol::MSG_TYPE_CHAT_RESP, resp)) {
-                auto* hdr = reinterpret_cast<const protocol::packet_header*>(resp.data());
-                protocol::ChatResponse rsp;
-                if (rsp.ParseFromArray(resp.data() + sizeof(*hdr), hdr->body_len)) {
-                    fprintf(stdout, "[chat] err=%d msg_id=%u\n",
-                            static_cast<int>(rsp.err()), rsp.msg_id());
-                } else {
-                    fprintf(stderr, "[chat] bad response body\n");
-                }
+        } else if (strcmp(cmd, "logout") == 0) {
+            protocol::user::UserPacket req;
+            req.mutable_logout_req()->set_user_id(g_uid);
+            protocol::user::UserPacket resp;
+            if (client::user_request(fd, req, resp)) {
+                fprintf(stdout, "[logout] err=%s(%d)\n",
+                        err_name(resp.logout_resp().err()),
+                        static_cast<int>(resp.logout_resp().err()));
+                if (resp.logout_resp().err() == protocol::user::ERR_SUCCESS) g_uid = 0;
             }
 
         } else if (strcmp(cmd, "heartbeat") == 0) {
-            protocol::HeartbeatReq req;
-            std::vector<char> resp;
-            if (client::request(fd, protocol::MSG_TYPE_HEARTBEAT_REQ, req,
-                                protocol::MSG_TYPE_HEARTBEAT_RESP, resp)) {
+            protocol::user::UserPacket req;
+            req.mutable_heartbeat_req();
+            protocol::user::UserPacket resp;
+            if (client::user_request(fd, req, resp)) {
                 fprintf(stdout, "[heartbeat] ok\n");
             }
-             
+
+        } else if (strcmp(cmd, "friend") == 0) {
+            char sub[64] = {0};
+            if (sscanf(line, "%*s %63s", sub) != 1) {
+                fprintf(stderr, "usage: friend req|pending|del|check|block ...\n");
+                continue;
+            }
+            if (strcmp(sub, "req") == 0) {
+                uint32_t fid = 0;
+                char remark[128] = {0};
+                if (sscanf(line, "%*s %*s %u %127[^\n]", &fid, remark) < 1) {
+                    fprintf(stderr, "usage: friend req <friend_id> [remark]\n");
+                    continue;
+                }
+                protocol::user::UserPacket req;
+                auto* r = req.mutable_friend_request_req();
+                r->set_friend_id(fid);
+                r->set_remark(remark);
+                protocol::user::UserPacket resp;
+                if (client::user_request(fd, req, resp)) {
+                    fprintf(stdout, "[friend.req] err=%s(%d) friend_id=%u\n",
+                            err_name(resp.friend_request_resp().err()),
+                            static_cast<int>(resp.friend_request_resp().err()),
+                            resp.friend_request_resp().friend_id());
+                }
+            } else if (strcmp(sub, "pending") == 0) {
+                protocol::user::UserPacket req;
+                req.mutable_friend_pending_list_req();
+                protocol::user::UserPacket resp;
+                if (client::user_request(fd, req, resp)) {
+                    const auto& rr = resp.friend_pending_list_resp();
+                    fprintf(stdout, "[friend.pending] err=%s(%d) items=%d\n",
+                            err_name(rr.err()), static_cast<int>(rr.err()), rr.items_size());
+                    for (const auto& it : rr.items()) {
+                        fprintf(stdout, "  %u  %s  remark='%s' ts=%llu\n",
+                                it.friend_id(), it.nickname().c_str(), it.remark().c_str(),
+                                static_cast<unsigned long long>(it.ts()));
+                    }
+                }
+            } else if (strcmp(sub, "del") == 0) {
+                uint32_t fid = 0;
+                if (sscanf(line, "%*s %*s %u", &fid) != 1) {
+                    fprintf(stderr, "usage: friend del <friend_id>\n");
+                    continue;
+                }
+                protocol::user::UserPacket req;
+                req.mutable_friend_del_req()->set_friend_id(fid);
+                protocol::user::UserPacket resp;
+                if (client::user_request(fd, req, resp)) {
+                    fprintf(stdout, "[friend.del] err=%s(%d)\n",
+                            err_name(resp.friend_del_resp().err()),
+                            static_cast<int>(resp.friend_del_resp().err()));
+                }
+            } else if (strcmp(sub, "check") == 0) {
+                uint32_t fid = 0;
+                if (sscanf(line, "%*s %*s %u", &fid) != 1) {
+                    fprintf(stderr, "usage: friend check <friend_id>\n");
+                    continue;
+                }
+                protocol::user::UserPacket req;
+                req.mutable_friend_check_req()->set_friend_id(fid);
+                protocol::user::UserPacket resp;
+                if (client::user_request(fd, req, resp)) {
+                    const auto& rr = resp.friend_check_resp();
+                    fprintf(stdout, "[friend.check] err=%s(%d) is_friend=%d nickname='%s'\n",
+                            err_name(rr.err()), static_cast<int>(rr.err()),
+                            rr.is_friend() ? 1 : 0, rr.nickname().c_str());
+                }
+            } else if (strcmp(sub, "block") == 0) {
+                uint32_t fid = 0;
+                char mode[8] = {0};
+                if (sscanf(line, "%*s %*s %u %7s", &fid, mode) < 1) {
+                    fprintf(stderr, "usage: friend block <friend_id> [on|off]\n");
+                    continue;
+                }
+                bool block = (mode[0] == '\0') || (strcmp(mode, "on") == 0);
+                protocol::user::UserPacket req;
+                auto* r = req.mutable_friend_block_req();
+                r->set_friend_id(fid);
+                r->set_block(block);
+                protocol::user::UserPacket resp;
+                if (client::user_request(fd, req, resp)) {
+                    fprintf(stdout, "[friend.block] err=%s(%d)\n",
+                            err_name(resp.friend_block_resp().err()),
+                            static_cast<int>(resp.friend_block_resp().err()));
+                }
+            } else {
+                fprintf(stderr, "usage: friend req|pending|del|check|block ...\n");
+            }
+
+        } else if (strcmp(cmd, "chat") == 0) {
+            uint32_t to_id = 0;
+            char content[4096] = {0};
+            if (sscanf(line, "%*s %u %4095[^\n]", &to_id, content) < 1) {
+                fprintf(stderr, "usage: chat <to_id> <text>\n");
+                continue;
+            }
+            protocol::chat::ChatPacket req;
+            auto* r = req.mutable_send_req();
+            r->set_to_id(to_id);
+            r->set_content(content);
+            protocol::chat::ChatPacket resp;
+            if (client::chat_request(fd, req, resp)) {
+                const auto& rr = resp.send_resp();
+                fprintf(stdout, "[chat] err=%s(%d) msg_id=%llu server_ts=%llu\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()),
+                        static_cast<unsigned long long>(rr.msg_id()),
+                        static_cast<unsigned long long>(rr.server_ts()));
+            }
+
+        } else if (strcmp(cmd, "history") == 0) {
+            uint32_t target_id = 0;
+            uint32_t limit = 50;
+            int n = sscanf(line, "%*s %u %u", &target_id, &limit);
+            if (n < 1) {
+                fprintf(stderr, "usage: history <target_id> [limit]\n");
+                continue;
+            }
+            protocol::chat::ChatPacket req;
+            auto* r = req.mutable_history_req();
+            r->set_target_id(target_id);
+            r->set_after_msg_id(0);
+            r->set_limit(limit);
+            protocol::chat::ChatPacket resp;
+            if (client::chat_request(fd, req, resp)) {
+                const auto& rr = resp.history_resp();
+                fprintf(stdout, "[history] err=%s(%d) messages=%d\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()), rr.messages_size());
+                for (const auto& m : rr.messages()) {
+                    fprintf(stdout, "  #%llu %s(%u) -> %u: %s\n",
+                            static_cast<unsigned long long>(m.msg_id()),
+                            m.from_id() == g_uid ? "me" : "peer",
+                            m.from_id(), m.to_id(), m.content().c_str());
+                }
+            }
+
         } else {
             fprintf(stderr, "unknown command: %s (try 'help')\n", cmd);
         }
-
-
-//指令处理模块结束
-
-
-    }//主循环结束
+    }
 
     ::close(fd);
     fprintf(stdout, "\n[client] closed.\n");

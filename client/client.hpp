@@ -4,6 +4,8 @@
 #include <vector>
 
 #include "../protocol/protocol.hpp"
+#include "../protocol/user/user.pb.h"
+#include "../protocol/chat/chat.pb.h"
 
 namespace client {
 
@@ -12,6 +14,11 @@ namespace client {
 //
 //  数据包布局: packet_header(8B) + protobuf body, 与 handler 一致:
 //     magic(2) + ver(1) + type(1) + body_len(4) + body
+//  type 为域: DOMAIN_USER → UserPacket / DOMAIN_CHAT → ChatPacket
+//
+//  读模型: 启动后台收包线程(start_reader)常驻读 socket,
+//    推送(ChatNotify/SystemNotify/UserStatusNotify)实时打印;
+//    请求响应入队, 由 user_request/chat_request 取回。
 // ============================================================
 
 /// 构建一个完整数据包(header + protobuf body)
@@ -20,13 +27,13 @@ std::vector<char> build_packet(uint8_t type, const google::protobuf::Message& bo
 /// 阻塞发送完整数据包, 成功返回 true
 bool send_packet(int fd, const std::vector<char>& packet);
 
-/// 阻塞读取一个完整数据包(header + body), 失败/对端关闭返回空 vector
-std::vector<char> read_packet(int fd);
+/// 启动后台收包线程。连接关闭或出错时自动结束并唤醒所有等待者。
+void start_reader(int fd);
 
-/// 发送一个请求并等待对应类型的响应。
-/// 期间收到的其它类型数据包(如系统通知)只打印并跳过。
-/// 成功返回 true, resp_packet 保存完整响应包(header + body)。
-bool request(int fd, uint8_t req_type, const google::protobuf::Message& req,
-             uint8_t expect_type, std::vector<char>& resp_packet);
+/// 发送 user 域请求(信封), 等待匹配的响应信封(由请求分支推出)。
+bool user_request(int fd, protocol::user::UserPacket& req, protocol::user::UserPacket& resp);
+
+/// 发送 chat 域请求(信封), 等待匹配的响应信封。
+bool chat_request(int fd, protocol::chat::ChatPacket& req, protocol::chat::ChatPacket& resp);
 
 }  // namespace client

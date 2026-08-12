@@ -31,7 +31,7 @@
 #include <google/protobuf/extension_set.h>  // IWYU pragma: export
 #include <google/protobuf/generated_enum_reflection.h>
 #include <google/protobuf/unknown_field_set.h>
-#include "../user/user.pb.h"
+#include "user.pb.h"
 // @@protoc_insertion_point(includes)
 #include <google/protobuf/port_def.inc>
 #define PROTOBUF_INTERNAL_EXPORT_chat_2eproto
@@ -262,15 +262,14 @@ class ChatMessage final :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kContentFieldNumber = 6,
+    kContentFieldNumber = 5,
     kMsgIdFieldNumber = 1,
     kFromIdFieldNumber = 2,
     kToIdFieldNumber = 3,
+    kTsFieldNumber = 6,
     kToTypeFieldNumber = 4,
-    kMsgTypeFieldNumber = 5,
-    kTsFieldNumber = 7,
   };
-  // string content = 6;
+  // string content = 5;
   void clear_content();
   const std::string& content() const;
   template <typename ArgT0 = const std::string&, typename... ArgT>
@@ -311,6 +310,15 @@ class ChatMessage final :
   void _internal_set_to_id(uint32_t value);
   public:
 
+  // uint64 ts = 6;
+  void clear_ts();
+  uint64_t ts() const;
+  void set_ts(uint64_t value);
+  private:
+  uint64_t _internal_ts() const;
+  void _internal_set_ts(uint64_t value);
+  public:
+
   // .protocol.chat.TargetType to_type = 4;
   void clear_to_type();
   ::protocol::chat::TargetType to_type() const;
@@ -318,24 +326,6 @@ class ChatMessage final :
   private:
   ::protocol::chat::TargetType _internal_to_type() const;
   void _internal_set_to_type(::protocol::chat::TargetType value);
-  public:
-
-  // .protocol.chat.MsgType msg_type = 5;
-  void clear_msg_type();
-  ::protocol::chat::MsgType msg_type() const;
-  void set_msg_type(::protocol::chat::MsgType value);
-  private:
-  ::protocol::chat::MsgType _internal_msg_type() const;
-  void _internal_set_msg_type(::protocol::chat::MsgType value);
-  public:
-
-  // uint64 ts = 7;
-  void clear_ts();
-  uint64_t ts() const;
-  void set_ts(uint64_t value);
-  private:
-  uint64_t _internal_ts() const;
-  void _internal_set_ts(uint64_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:protocol.chat.ChatMessage)
@@ -350,9 +340,8 @@ class ChatMessage final :
     uint64_t msg_id_;
     uint32_t from_id_;
     uint32_t to_id_;
-    int to_type_;
-    int msg_type_;
     uint64_t ts_;
+    int to_type_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1154,6 +1143,7 @@ class ChatHistoryResponse final :
 
   enum : int {
     kMessagesFieldNumber = 1,
+    kErrFieldNumber = 2,
   };
   // repeated .protocol.chat.ChatMessage messages = 1;
   int messages_size() const;
@@ -1173,6 +1163,15 @@ class ChatHistoryResponse final :
   const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protocol::chat::ChatMessage >&
       messages() const;
 
+  // .protocol.user.ErrCode err = 2;
+  void clear_err();
+  ::protocol::user::ErrCode err() const;
+  void set_err(::protocol::user::ErrCode value);
+  private:
+  ::protocol::user::ErrCode _internal_err() const;
+  void _internal_set_err(::protocol::user::ErrCode value);
+  public:
+
   // @@protoc_insertion_point(class_scope:protocol.chat.ChatHistoryResponse)
  private:
   class _Internal;
@@ -1182,6 +1181,7 @@ class ChatHistoryResponse final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protocol::chat::ChatMessage > messages_;
+    int err_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1710,27 +1710,7 @@ inline void ChatMessage::set_to_type(::protocol::chat::TargetType value) {
   // @@protoc_insertion_point(field_set:protocol.chat.ChatMessage.to_type)
 }
 
-// .protocol.chat.MsgType msg_type = 5;
-inline void ChatMessage::clear_msg_type() {
-  _impl_.msg_type_ = 0;
-}
-inline ::protocol::chat::MsgType ChatMessage::_internal_msg_type() const {
-  return static_cast< ::protocol::chat::MsgType >(_impl_.msg_type_);
-}
-inline ::protocol::chat::MsgType ChatMessage::msg_type() const {
-  // @@protoc_insertion_point(field_get:protocol.chat.ChatMessage.msg_type)
-  return _internal_msg_type();
-}
-inline void ChatMessage::_internal_set_msg_type(::protocol::chat::MsgType value) {
-  
-  _impl_.msg_type_ = value;
-}
-inline void ChatMessage::set_msg_type(::protocol::chat::MsgType value) {
-  _internal_set_msg_type(value);
-  // @@protoc_insertion_point(field_set:protocol.chat.ChatMessage.msg_type)
-}
-
-// string content = 6;
+// string content = 5;
 inline void ChatMessage::clear_content() {
   _impl_.content_.ClearToEmpty();
 }
@@ -1780,7 +1760,7 @@ inline void ChatMessage::set_allocated_content(std::string* content) {
   // @@protoc_insertion_point(field_set_allocated:protocol.chat.ChatMessage.content)
 }
 
-// uint64 ts = 7;
+// uint64 ts = 6;
 inline void ChatMessage::clear_ts() {
   _impl_.ts_ = uint64_t{0u};
 }
@@ -2158,6 +2138,26 @@ inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::protocol::chat::ChatMe
 ChatHistoryResponse::messages() const {
   // @@protoc_insertion_point(field_list:protocol.chat.ChatHistoryResponse.messages)
   return _impl_.messages_;
+}
+
+// .protocol.user.ErrCode err = 2;
+inline void ChatHistoryResponse::clear_err() {
+  _impl_.err_ = 0;
+}
+inline ::protocol::user::ErrCode ChatHistoryResponse::_internal_err() const {
+  return static_cast< ::protocol::user::ErrCode >(_impl_.err_);
+}
+inline ::protocol::user::ErrCode ChatHistoryResponse::err() const {
+  // @@protoc_insertion_point(field_get:protocol.chat.ChatHistoryResponse.err)
+  return _internal_err();
+}
+inline void ChatHistoryResponse::_internal_set_err(::protocol::user::ErrCode value) {
+  
+  _impl_.err_ = value;
+}
+inline void ChatHistoryResponse::set_err(::protocol::user::ErrCode value) {
+  _internal_set_err(value);
+  // @@protoc_insertion_point(field_set:protocol.chat.ChatHistoryResponse.err)
 }
 
 // -------------------------------------------------------------------
