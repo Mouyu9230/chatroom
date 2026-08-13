@@ -257,9 +257,9 @@ bool chat_request(int fd, protocol::chat::ChatPacket& req, protocol::chat::ChatP
     protocol::chat::ChatPacket::BodyCase expect = expected_chat_resp_case(req);
     for (;;) {
         std::vector<char> pkt = pop_packet();
-        if (pkt.empty()) {
+        if (pkt.empty()) { 
             fprintf(stderr, "[client] connection closed\n");
-            return false;
+            return false; 
         }
         auto* hdr = reinterpret_cast<const protocol::packet_header*>(pkt.data());
         if (hdr->type != protocol::DOMAIN_CHAT) {
@@ -400,6 +400,10 @@ int main(int argc, char* argv[]) {
             }
 
         } else if (strcmp(cmd, "logout") == 0) {
+            if(g_uid==0){
+                fprintf(stdout,"[error] login first");
+            }else{
+
             protocol::user::UserPacket req;
             req.mutable_logout_req()->set_user_id(g_uid);
             protocol::user::UserPacket resp;
@@ -409,6 +413,9 @@ int main(int argc, char* argv[]) {
                         static_cast<int>(resp.logout_resp().err()));
                 if (resp.logout_resp().err() == protocol::user::ERR_SUCCESS) g_uid = 0;
             }
+             
+            }
+
 
         } else if (strcmp(cmd, "heartbeat") == 0) {
             protocol::user::UserPacket req;

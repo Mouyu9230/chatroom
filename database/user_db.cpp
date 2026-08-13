@@ -87,23 +87,23 @@ int logout_user(Db& db, uint32_t user_id) {
     std::string sql = "UPDATE users SET online=0 WHERE user_id=" + std::to_string(user_id);
     if (!db.execute(sql)) return protocol::user::ERR_SYSTEM;
     return protocol::user::ERR_SUCCESS;
-}
+}   
 
 int friend_request(Db& db, uint32_t from_id, uint32_t to_id, const std::string& remark) {
     if (from_id == 0 || to_id == 0 || from_id == to_id) return protocol::user::ERR_INVALID_PARAM;
-    if (!user_exists(db, to_id)) return protocol::user::ERR_INVALID_USER;
-
-    int a2b = rel_status(db, from_id, to_id);
+    if (!user_exists(db, to_id)) return protocol::user::ERR_INVALID_USER;     
+ 
+    int a2b = rel_status(db, from_id, to_id); 
     int b2a = rel_status(db, to_id, from_id);
     if (a2b == 1 || b2a == 1) return protocol::user::ERR_ALREADY_FRIEND;
-    if (a2b == 0) return protocol::user::ERR_REQUEST_PENDING;
+    if (a2b == 0) return protocol::user::ERR_REQUEST_PENDING; 
     if (a2b == 2 || b2a == 2) return protocol::user::ERR_BLOCKED;
 
     std::string sql = "INSERT INTO friends(user_id,friend_id,status,remark,ts) VALUES(" +
                       std::to_string(from_id) + "," + std::to_string(to_id) + ",0,'" +
                       db.escape(remark) + "'," + std::to_string(now_sec()) + ")";
     if (!db.execute(sql)) return protocol::user::ERR_SYSTEM;
-    return protocol::user::ERR_SUCCESS;
+    return protocol::user::ERR_SUCCESS; 
 }
 
 int friend_pending_list(Db& db, uint32_t user_id,

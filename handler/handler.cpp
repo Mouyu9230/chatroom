@@ -97,6 +97,8 @@ TaskResult on_logout(const Task& task, const protocol::user::LogoutRequest& req)
     auto* r = resp.mutable_logout_resp();
 
     DbGuard g(db_pool());
+
+    
     int err = protocol::user::ERR_SUCCESS;
     if (!g) err = protocol::user::ERR_SYSTEM;
     else err = db::user::logout_user(*g, req.user_id());
@@ -105,8 +107,8 @@ TaskResult on_logout(const Task& task, const protocol::user::LogoutRequest& req)
     // 返回 unbind_user: 主线程解绑在线表, 但保持连接不断
     return {task.fd, user_packet(resp), false, 0, true};
 }
-
-TaskResult on_heartbeat(const Task& task) {
+ 
+TaskResult on_heartbeat(const Task& task) { 
     protocol::user::UserPacket resp;
     resp.mutable_heartbeat_resp();
     return {task.fd, user_packet(resp), false};
