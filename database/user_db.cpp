@@ -139,7 +139,7 @@ int friend_check(Db& db, uint32_t user_id, uint32_t friend_id,
                  bool& is_friend, std::string& nickname) {
     is_friend = false;
     nickname.clear();
-    std::string sql =
+    std::string sql = 
         "SELECT u.nickname FROM friends f JOIN users u ON u.user_id = f.friend_id"
         " WHERE f.user_id=" + std::to_string(user_id) +
         " AND f.friend_id=" + std::to_string(friend_id) + " AND f.status=1";
@@ -167,6 +167,12 @@ int friend_block(Db& db, uint32_t user_id, uint32_t friend_id, bool block) {
         if (!db.execute(sql)) return protocol::user::ERR_SYSTEM;
     }
     return protocol::user::ERR_SUCCESS;
+}
+
+bool friend_is_blocked(Db& db, uint32_t user_id, uint32_t peer_id) {
+    if (rel_status(db, user_id, peer_id) == 2) return true;
+    if (rel_status(db, peer_id, user_id) == 2) return true;
+    return false;
 }
 
 bool friend_accept_by_chat(Db& db, uint32_t from_id, uint32_t to_id) {

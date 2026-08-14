@@ -256,6 +256,12 @@ TaskResult on_chat_send(const Task& task, const protocol::chat::ChatSendRequest&
         return {task.fd, chat_packet(resp), false};
     }
 
+    // 任一方向已拉黑: 拒绝发送, 也不触发"私聊即接受"规则
+    if (db::user::friend_is_blocked(*g, task.user_id, req.to_id())) {
+        r->set_err(protocol::user::ERR_BLOCKED);
+        return {task.fd, chat_packet(resp), false};
+    }
+
     // 好友规则: 若 to 之前申请了 from, from 主动发私聊即视为接受
     db::user::friend_accept_by_chat(*g, task.user_id, req.to_id());
 

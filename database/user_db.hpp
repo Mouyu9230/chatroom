@@ -57,5 +57,8 @@ int friend_block(Db&, uint32_t user_id, uint32_t friend_id, bool block);
 // 将双方关系置为 accepted。返回是否发生了接受。
 bool friend_accept_by_chat(Db&, uint32_t from_id, uint32_t to_id);
 
+// 任一方向已拉黑(user→peer 或 peer→user 存在 status=2)。用于聊天/加好友前拦截。
+bool friend_is_blocked(Db&, uint32_t user_id, uint32_t peer_id);
+
 }  // namespace user
 }  // namespace db
