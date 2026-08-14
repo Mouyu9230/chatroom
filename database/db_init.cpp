@@ -27,6 +27,14 @@ const char* const kDDL[] = {
     "  UNIQUE KEY uk_pair (user_id, friend_id)"
     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 
+    "CREATE TABLE IF NOT EXISTS blocks ("
+    "  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
+    "  blocker_id INT UNSIGNED NOT NULL,"
+    "  blockee_id INT UNSIGNED NOT NULL,"
+    "  ts         BIGINT UNSIGNED NOT NULL,"
+    "  UNIQUE KEY uk_pair (blocker_id, blockee_id)"
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
     "CREATE TABLE IF NOT EXISTS messages ("
     "  msg_id  BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
     "  from_id INT UNSIGNED NOT NULL,"

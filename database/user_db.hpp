@@ -49,7 +49,9 @@ int friend_del(Db&, uint32_t user_id, uint32_t friend_id);
 int friend_check(Db&, uint32_t user_id, uint32_t friend_id,
                  bool& is_friend, std::string& nickname);
 
-// 拉黑 / 取消拉黑 (block=true 置 status=2, false 恢复 status=0)。
+// 拉黑 / 取消拉黑。只操作独立的 blocks 表, 不改动 friends 好友状态;
+// 拉黑仅作消息发送闸门。拉黑(block=true)插入 blocker_id→blockee_id 记录,
+// 取消拉黑(block=false)删除该记录。
 int friend_block(Db&, uint32_t user_id, uint32_t friend_id, bool block);
 
 // 好友系统规则: "对方申请了我, 我给他发一条私聊即视为接受"。
@@ -57,7 +59,8 @@ int friend_block(Db&, uint32_t user_id, uint32_t friend_id, bool block);
 // 将双方关系置为 accepted。返回是否发生了接受。
 bool friend_accept_by_chat(Db&, uint32_t from_id, uint32_t to_id);
 
-// 任一方向已拉黑(user→peer 或 peer→user 存在 status=2)。用于聊天/加好友前拦截。
+// 任一方向已拉黑(blocks 表存在 blocker/blockee 为双方任一侧的记录)。
+// 用于聊天发送前拦截(handler::on_chat_send)与加好友前拦截(friend_request)。
 bool friend_is_blocked(Db&, uint32_t user_id, uint32_t peer_id);
 
 }  // namespace user

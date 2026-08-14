@@ -5,7 +5,8 @@
 --  status 含义 (friends 表):
 --    0 = pending 待处理申请
 --    1 = accepted 已建立好友关系
---    2 = blocked 已拉黑
+--  拉黑独立存于 blocks 表(blocker_id → blockee_id), 不改动 friends 好友状态,
+--  仅用于判别消息能否发送(见 friend_is_blocked)。
 -- ============================================================
 
 CREATE DATABASE IF NOT EXISTS chatroom CHARACTER SET utf8mb4;
@@ -30,6 +31,14 @@ CREATE TABLE IF NOT EXISTS friends (
   remark    VARCHAR(128) NOT NULL DEFAULT '',
   ts        BIGINT UNSIGNED NOT NULL,
   UNIQUE KEY uk_pair (user_id, friend_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS blocks (
+  id         INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  blocker_id INT UNSIGNED NOT NULL,
+  blockee_id INT UNSIGNED NOT NULL,
+  ts         BIGINT UNSIGNED NOT NULL,
+  UNIQUE KEY uk_pair (blocker_id, blockee_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
 CREATE TABLE IF NOT EXISTS messages (

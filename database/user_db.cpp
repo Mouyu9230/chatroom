@@ -96,8 +96,8 @@ int friend_request(Db& db, uint32_t from_id, uint32_t to_id, const std::string& 
     int a2b = rel_status(db, from_id, to_id); 
     int b2a = rel_status(db, to_id, from_id);
     if (a2b == 1 || b2a == 1) return protocol::user::ERR_ALREADY_FRIEND;
-    if (a2b == 0) return protocol::user::ERR_REQUEST_PENDING; 
-    if (a2b == 2 || b2a == 2) return protocol::user::ERR_BLOCKED;
+    if (a2b == 0) return protocol::user::ERR_REQUEST_PENDING;
+    if (friend_is_blocked(db, from_id, to_id)) return protocol::user::ERR_BLOCKED;
 
     std::string sql = "INSERT INTO friends(user_id,friend_id,status,remark,ts) VALUES(" +
                       std::to_string(from_id) + "," + std::to_string(to_id) + ",0,'" +
@@ -155,24 +155,34 @@ int friend_check(Db& db, uint32_t user_id, uint32_t friend_id,
 
 int friend_block(Db& db, uint32_t user_id, uint32_t friend_id, bool block) {
     if (block) {
-        std::string sql =
-            "INSERT INTO friends(user_id,friend_id,status,remark,ts) VALUES(" +
-            std::to_string(user_id) + "," + std::to_string(friend_id) + ",2,''," +
-            std::to_string(now_sec()) +
-            ") ON DUPLICATE KEY UPDATE status=2";
+        // 拉黑: 只写 blocks 表, 不碰 friends —— 好友关系保持不受影响,
+        // 拉黑仅作为消息发送闸门(见 friend_is_blocked)。
+        std::string sql = "INSERT IGNORE INTO blocks(blocker_id,blockee_id,ts) VALUES(" +
+                          std::to_string(user_id) + "," + std::to_string(friend_id) + "," +
+                          std::to_string(now_sec()) + ")";
         if (!db.execute(sql)) return protocol::user::ERR_SYSTEM;
     } else {
-        std::string sql = "UPDATE friends SET status=0 WHERE user_id=" + std::to_string(user_id) +
-                          " AND friend_id=" + std::to_string(friend_id) + " AND status=2";
+        // 取消拉黑: 删除 blocks 记录
+        std::string sql = "DELETE FROM blocks WHERE blocker_id=" + std::to_string(user_id) +
+                          " AND blockee_id=" + std::to_string(friend_id);
         if (!db.execute(sql)) return protocol::user::ERR_SYSTEM;
     }
     return protocol::user::ERR_SUCCESS;
 }
 
 bool friend_is_blocked(Db& db, uint32_t user_id, uint32_t peer_id) {
-    if (rel_status(db, user_id, peer_id) == 2) return true;
-    if (rel_status(db, peer_id, user_id) == 2) return true;
-    return false;
+    // 任一方向存在拉黑记录即视为被拦(用于聊天发送闸门)
+    std::string sql =
+        "SELECT 1 FROM blocks WHERE (blocker_id=" + std::to_string(user_id) +
+        " AND blockee_id=" + std::to_string(peer_id) + ")" +
+        " OR (blocker_id=" + std::to_string(peer_id) +
+        " AND blockee_id=" + std::to_string(user_id) + ") LIMIT 1";
+    bool blocked = false;
+    db.query(sql, [&](const std::vector<std::string>&) {
+        blocked = true;
+        return false;
+    });
+    return blocked;
 }
 
 bool friend_accept_by_chat(Db& db, uint32_t from_id, uint32_t to_id) {
