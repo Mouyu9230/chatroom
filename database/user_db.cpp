@@ -201,5 +201,31 @@ bool friend_accept_by_chat(Db& db, uint32_t from_id, uint32_t to_id) {
     return true;
 }
 
+int friend_ids(Db& db, uint32_t user_id, std::vector<uint32_t>& out) {
+    out.clear();
+    std::string sql =
+        "SELECT friend_id FROM friends WHERE user_id=" + std::to_string(user_id) +
+        " AND status=1 ORDER BY friend_id";
+    if (!db.query(sql, [&](const std::vector<std::string>& row) {
+            out.push_back(static_cast<uint32_t>(std::strtoul(row[0].c_str(), nullptr, 10)));
+            return true;
+        })) {
+        return protocol::user::ERR_SYSTEM;
+    }
+    return protocol::user::ERR_SUCCESS;
+}
+
+bool get_nickname(Db& db, uint32_t user_id, std::string& out) {
+    out.clear();
+    std::string sql = "SELECT nickname FROM users WHERE user_id=" + std::to_string(user_id);
+    bool found = false;
+    db.query(sql, [&](const std::vector<std::string>& row) {
+        found = true;
+        out = row[0];
+        return false;
+    });
+    return found;
+}
+
 }  // namespace user
 }  // namespace db

@@ -140,7 +140,7 @@ int main(int argc,char* argv[]){
                     }
                 }
 
-                // 处理需推送给其它在线用户的包(如 ChatNotify)
+                // 处理需推送给其它在线用户的包(如ChatNotify)
                 for (const auto& push : result.pushes) {
                     auto it = g_user_to_fd.find(push.to_user_id);
                     if (it == g_user_to_fd.end()) continue;   // 不在线, 丢弃(消息已落库, 可拉历史)

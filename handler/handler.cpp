@@ -87,7 +87,17 @@ TaskResult on_login(const Task& task, const protocol::user::LoginRequest& req) {
         fprintf(stdout, "[handler] login ok: user=%u nick=%s\n",
                 info.user_id(), info.nickname().c_str());
         // user_id 非 0: 主线程把该连接绑定为该用户
-        return {task.fd, user_packet(resp), false, info.user_id()};
+        TaskResult result{task.fd, user_packet(resp), false, info.user_id()};
+
+        // 系统通知: 向所有好友推送"该用户已上线"
+        std::vector<uint32_t> friends;
+        if (db::user::friend_ids(*g, info.user_id(), friends) == protocol::user::ERR_SUCCESS) {
+            std::string notice = info.nickname() + " 已上线";
+            for (uint32_t fid : friends) {
+                result.pushes.push_back(make_system_notify(fid, notice));
+            }
+        }
+        return result;
     }
     return {task.fd, user_packet(resp), false};
 }
@@ -105,7 +115,21 @@ TaskResult on_logout(const Task& task, const protocol::user::LogoutRequest& req)
     r->set_err(static_cast<protocol::user::ErrCode>(err));
 
     // 返回 unbind_user: 主线程解绑在线表, 但保持连接不断
-    return {task.fd, user_packet(resp), false, 0, true};
+    TaskResult result{task.fd, user_packet(resp), false, 0, true};
+
+    // 系统通知: 向所有好友推送"该用户已下线"
+    if (err == protocol::user::ERR_SUCCESS) {
+        std::string nickname;
+        db::user::get_nickname(*g, req.user_id(), nickname);
+        std::vector<uint32_t> friends;
+        if (db::user::friend_ids(*g, req.user_id(), friends) == protocol::user::ERR_SUCCESS) {
+            std::string notice = nickname + " 已下线";
+            for (uint32_t fid : friends) {
+                result.pushes.push_back(make_system_notify(fid, notice));
+            }
+        }
+    }
+    return result;
 }
  
 TaskResult on_heartbeat(const Task& task) { 
@@ -284,7 +308,7 @@ TaskResult on_chat_send(const Task& task, const protocol::chat::ChatSendRequest&
         m->set_msg_id(msg_id);
         m->set_from_id(task.user_id);
         m->set_to_id(req.to_id());
-        m->set_to_type(protocol::chat::TARGET_TYPE_USER);
+        m->set_to_type(protocol::chat::TARGET_TYPE_USER); 
         m->set_content(req.content());
         m->set_ts(ts);
         result.pushes.push_back({req.to_id(), chat_packet(push)});
@@ -295,7 +319,7 @@ TaskResult on_chat_send(const Task& task, const protocol::chat::ChatSendRequest&
 TaskResult on_chat_history(const Task& task, const protocol::chat::ChatHistoryRequest& req) {
     protocol::chat::ChatPacket resp;
     auto* r = resp.mutable_history_resp();
-    if (task.user_id == 0) {
+    if (task.user_id == 0 ) {
         r->set_err(protocol::user::ERR_NOT_LOGGED_IN);
         return {task.fd, chat_packet(resp), false};
     }
@@ -314,7 +338,7 @@ TaskResult on_chat_packet(const Task& task, const char* body, size_t body_len) {
     if (!pkt.ParseFromArray(body, static_cast<int>(body_len))) {
         fprintf(stderr, "[handler] bad chat packet body\n");
         return {task.fd, {}, true};
-    }
+    } 
     switch (pkt.body_case()) {
         case protocol::chat::ChatPacket::kSendReq:
             return on_chat_send(task, pkt.send_req());
@@ -331,6 +355,20 @@ TaskResult on_chat_packet(const Task& task, const char* body, size_t body_len) {
 }
 
 }  // namespace
+
+// ------------------------------------------------------------
+//  系统通知推送 (server -> client)
+//
+//  与 on_chat_send 的 ChatNotify 推送采用相同构造方式:
+//  填 SystemNotify → 包 UserPacket → 产出 PendingPush。
+//  纯推送不落库: 目标在线即实时送达, 离线则丢弃。
+// ------------------------------------------------------------
+PendingPush make_system_notify(uint32_t uid, const std::string& content) {
+    protocol::user::UserPacket pkt;
+    auto* n = pkt.mutable_system_notify();
+    n->set_content(content);
+    return {uid, user_packet(pkt)};
+}
 
 // ------------------------------------------------------------
 TaskResult handle_task(const Task& task) {

@@ -63,5 +63,11 @@ bool friend_accept_by_chat(Db&, uint32_t from_id, uint32_t to_id);
 // 用于聊天发送前拦截(handler::on_chat_send)与加好友前拦截(friend_request)。
 bool friend_is_blocked(Db&, uint32_t user_id, uint32_t peer_id);
 
+// 获取某用户所有已建立好友关系(status=1, 双向已接受)的好友 user_id 列表。
+int friend_ids(Db&, uint32_t user_id, std::vector<uint32_t>& out);
+
+// 获取用户昵称; 用户不存在返回 false。
+bool get_nickname(Db&, uint32_t user_id, std::string& out);
+
 }  // namespace user
 }  // namespace db
