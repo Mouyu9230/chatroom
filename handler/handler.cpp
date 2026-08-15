@@ -11,6 +11,7 @@
 #include "../database/db_pool.hpp"
 #include "../database/user_db.hpp"
 #include "../database/chat_db.hpp"
+#include "network/thread_pool/task_queue.hpp"
 
 namespace handler {
 namespace {
@@ -147,10 +148,17 @@ TaskResult on_friend_request(const Task& task, const protocol::user::FriendReque
     }
     DbGuard g(db_pool());
     int err = protocol::user::ERR_SYSTEM;
+
     if (g) err = db::user::friend_request(*g, task.user_id, req.friend_id(), req.remark());
     r->set_err(static_cast<protocol::user::ErrCode>(err));
     r->set_friend_id(req.friend_id());
-    return {task.fd, user_packet(resp), false};
+    TaskResult result={task.fd, user_packet(resp), false};
+
+    std::string nick;
+    db::user::get_nickname(*g,task.user_id,nick);
+    std::string notice="You received a friend request from "+nick+",user id="+std::to_string(task.user_id);
+    result.pushes.push_back(make_system_notify(req.friend_id(),notice));
+    return result;
 }
 
 TaskResult on_friend_pending_list(const Task& task, const protocol::user::FriendPendingListRequest&) {
@@ -178,9 +186,17 @@ TaskResult on_friend_del(const Task& task, const protocol::user::FriendDelReques
     }
     DbGuard g(db_pool());
     int err = protocol::user::ERR_SYSTEM;
+
     if (g) err = db::user::friend_del(*g, task.user_id, req.friend_id());
     r->set_err(static_cast<protocol::user::ErrCode>(err));
-    return {task.fd, user_packet(resp), false};
+
+    TaskResult result={task.fd, user_packet(resp), false};
+    std::string nick;
+    db::user::get_nickname(*g,req.friend_id(),nick);
+    std::string notice=nick+" userid="+std::to_string(req.friend_id())+" have been removed from your friend list";
+    result.pushes.push_back(make_system_notify(task.user_id,notice));
+
+    return result;
 }
 
 TaskResult on_friend_check(const Task& task, const protocol::user::FriendCheckRequest& req) {
@@ -209,10 +225,20 @@ TaskResult on_friend_block(const Task& task, const protocol::user::FriendBlockRe
         return {task.fd, user_packet(resp), false};
     }
     DbGuard g(db_pool());
+
     int err = protocol::user::ERR_SYSTEM;
     if (g) err = db::user::friend_block(*g, task.user_id, req.friend_id(), req.block());
     r->set_err(static_cast<protocol::user::ErrCode>(err));
-    return {task.fd, user_packet(resp), false};
+
+    TaskResult result={task.fd, user_packet(resp), false};
+    std::string nick;
+    db::user::get_nickname(*g,req.friend_id(),nick);
+    std::string notice=nick+" userid="+std::to_string(req.friend_id())+" have been blocked";
+    result.pushes.push_back(make_system_notify(task.user_id,notice));
+    db::user::get_nickname(*g,task.user_id,nick);
+    notice="You've been blocked by "+nick+" userid= "+std::to_string(task.user_id);
+    result.pushes.push_back(make_system_notify(req.friend_id(),notice));
+    return result;
 }
 
 // 注销账号: proto 标注为"未来扩展占位", 此处返回未实现。
