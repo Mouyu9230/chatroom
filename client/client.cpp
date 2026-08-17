@@ -101,6 +101,7 @@ protocol::user::UserPacket::BodyCase expected_user_resp_case(const protocol::use
         case P::kFriendDelReq:         return P::kFriendDelResp;
         case P::kFriendCheckReq:       return P::kFriendCheckResp;
         case P::kFriendBlockReq:       return P::kFriendBlockResp;
+        case P::kCancelReq:            return P::kCancelResp;
         default:                       return P::BODY_NOT_SET;
     }
 }
@@ -310,6 +311,7 @@ void print_help() {
             "  register <username> <password> <nickname>\n"
             "  login    <username> <password>\n"
             "  logout\n"
+            "  cancel   <username> <password>\n"
             "  heartbeat\n"
             "  friend req     <friend_id> [remark]\n"
             "  friend pending\n"
@@ -320,6 +322,21 @@ void print_help() {
             "  history  <target_id> [limit]\n"
             "  help\n"
             "  quit / exit\n");
+}
+
+// 向服务端发送登出请求并等待响应; 返回是否登出成功。
+// 连接已断开/请求失败时返回 false(退出流程不阻塞, 直接继续关闭)。
+bool send_logout(int fd, uint32_t uid) {
+    protocol::user::UserPacket req;
+    req.mutable_logout_req()->set_user_id(uid);
+    protocol::user::UserPacket resp;
+    if (!client::user_request(fd, req, resp)) {
+        fprintf(stderr, "[logout] request failed (connection closed?)\n");
+        return false;
+    }
+    const int err = resp.logout_resp().err();
+    fprintf(stdout, "[logout] err=%s(%d)\n", err_name(err), err);
+    return err == protocol::user::ERR_SUCCESS;
 }
 
 }  // namespace
@@ -341,7 +358,8 @@ int main(int argc, char* argv[]) {
 
     client::start_reader(fd);   // 后台线程常驻收包, 推送实时打印
 
-    uint32_t g_uid = 0;  // 当前登录用户 id(仅用于 logout)
+    uint32_t g_uid = 0;        // 当前登录用户 id
+    char g_username[128] = {0};  // 当前登录用户名(用于判断注销的是否为当前账号)
 
     char line[1024];
     while (1) {
@@ -393,6 +411,7 @@ int main(int argc, char* argv[]) {
                 fprintf(stdout, "[login] err=%s(%d)", err_name(rr.err()), static_cast<int>(rr.err()));
                 if (rr.err() == protocol::user::ERR_SUCCESS) {
                     g_uid = rr.user_id();
+                    snprintf(g_username, sizeof(g_username), "%s", username);
                     fprintf(stdout, " user_id=%u nickname=%s",
                             rr.user_id(), rr.user().nickname().c_str());
                 }
@@ -400,22 +419,35 @@ int main(int argc, char* argv[]) {
             }
 
         } else if (strcmp(cmd, "logout") == 0) {
-            if(g_uid==0){
-                fprintf(stdout,"[error] login first");
-            }else{
+            if (g_uid == 0) {
+                fprintf(stdout, "[error] login first");
+            } else if (send_logout(fd, g_uid)) {
+                g_uid = 0;
+                g_username[0] = '\0';
+            }
 
+        } else if (strcmp(cmd, "cancel") == 0) {
+            char username[128] = {0}, password[128] = {0};
+            if (sscanf(line, "%*s %127s %127s", username, password) != 2) {
+                fprintf(stderr, "usage: cancel <username> <password>\n");
+                continue;
+            }
             protocol::user::UserPacket req;
-            req.mutable_logout_req()->set_user_id(g_uid);
-            protocol::user::UserPacket resp;
+            auto* r = req.mutable_cancel_req();
+            r->set_username(username);
+            r->set_password(password);
+            protocol::user::UserPacket resp; 
             if (client::user_request(fd, req, resp)) {
-                fprintf(stdout, "[logout] err=%s(%d)\n",
-                        err_name(resp.logout_resp().err()),
-                        static_cast<int>(resp.logout_resp().err()));
-                if (resp.logout_resp().err() == protocol::user::ERR_SUCCESS) g_uid = 0;
+                const auto& rr = resp.cancel_resp();
+                fprintf(stdout, "[cancel] err=%s(%d)\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()));
+                // 注销的正是当前登录账号: 本地清空登录态(服务端已解绑)
+                if (rr.err() == protocol::user::ERR_SUCCESS &&
+                    g_uid != 0 && strcmp(username, g_username) == 0) {
+                    g_uid = 0;
+                    g_username[0] = '\0';
+                }
             }
-             
-            }
-
 
         } else if (strcmp(cmd, "heartbeat") == 0) {
             protocol::user::UserPacket req;
@@ -563,6 +595,12 @@ int main(int argc, char* argv[]) {
         } else {
             fprintf(stderr, "unknown command: %s (try 'help')\n", cmd);
         }
+    }
+
+    // 退出前若已登录, 先向服务端登出(online 置 0, 并向好友推送下线通知)。
+    // 覆盖 quit / exit / EOF 三种退出路径。
+    if (g_uid != 0) {
+        send_logout(fd, g_uid);
     }
 
     ::close(fd);

@@ -96,7 +96,35 @@ int logout_user(Db& db, uint32_t user_id) {
     std::string sql = "UPDATE users SET online=0 WHERE user_id=" + std::to_string(user_id);
     if (!db.execute(sql)) return protocol::user::ERR_SYSTEM;
     return protocol::user::ERR_SUCCESS;
-}   
+}
+
+int cancel_user(Db& db, const std::string& username, const std::string& password,
+                uint32_t& user_id) {
+    user_id = 0;
+    // 1. 凭据校验, 取得 user_id
+    std::string sel = "SELECT user_id FROM users WHERE username='" + db.escape(username) +
+                      "' AND password='" + db.escape(password) + "'";
+    if (!db.query(sel, [&](const std::vector<std::string>& row) {
+            user_id = static_cast<uint32_t>(std::strtoul(row[0].c_str(), nullptr, 10));
+            return false;
+        })) {
+        return protocol::user::ERR_SYSTEM;
+    }
+    if (user_id == 0) return protocol::user::ERR_INVALID_USER;
+
+    // 2. 删除关联数据(双向)与账号本身
+    std::string u = std::to_string(user_id);
+    std::string dels[] = {
+        "DELETE FROM friends WHERE user_id=" + u + " OR friend_id=" + u,
+        "DELETE FROM blocks WHERE blocker_id=" + u + " OR blockee_id=" + u,
+        "DELETE FROM messages WHERE from_id=" + u + " OR to_id=" + u,
+        "DELETE FROM users WHERE user_id=" + u,
+    };
+    for (const auto& sql : dels) {
+        if (!db.execute(sql)) return protocol::user::ERR_SYSTEM;
+    }
+    return protocol::user::ERR_SUCCESS;
+}
 
 int friend_request(Db& db, uint32_t from_id, uint32_t to_id, const std::string& remark) {
     if (from_id == 0 || to_id == 0 || from_id == to_id) return protocol::user::ERR_INVALID_PARAM;

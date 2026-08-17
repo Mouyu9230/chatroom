@@ -33,6 +33,12 @@ int login_user(Db&, const std::string& username, const std::string& password,
 // 登出: online 置 0。
 int logout_user(Db&, uint32_t user_id);
 
+// 注销账号: 凭据(用户名+密码)校验通过后, 删除账号及其关联数据
+// (好友关系/拉黑/聊天消息, 双向)。成功时 user_id 输出被注销的 id;
+// 用户名或密码错误返回 ERR_INVALID_USER。
+int cancel_user(Db&, const std::string& username, const std::string& password,
+                uint32_t& user_id);
+
 // 发起加好友申请 from → to。
 // 自加 ERR_INVALID_PARAM / 目标不存在 ERR_INVALID_USER /
 // 已是好友 ERR_ALREADY_FRIEND / 已有待处理申请 ERR_REQUEST_PENDING /

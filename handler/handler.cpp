@@ -252,12 +252,29 @@ TaskResult on_friend_block(const Task& task, const protocol::user::FriendBlockRe
     return result;
 }
 
-// 注销账号: proto 标注为"未来扩展占位", 此处返回未实现。
-TaskResult on_cancel(const Task& task, const protocol::user::CancelRequest&) {
+// 注销账号: 凭据(用户名+密码)校验通过后, 删除账号及其关联数据
+// (好友关系/拉黑/聊天记录)。若注销的正是当前连接绑定的用户,
+// 解绑在线表(连接保持, 类似登出)。
+TaskResult on_cancel(const Task& task, const protocol::user::CancelRequest& req) {
     protocol::user::UserPacket resp;
     auto* r = resp.mutable_cancel_resp();
-    r->set_err(protocol::user::ERR_SYSTEM);  // TODO: 未实现
-    return {task.fd, user_packet(resp), false};
+
+    DbGuard g(db_pool());
+    if (!g) {
+        r->set_err(protocol::user::ERR_SYSTEM);
+        return {task.fd, user_packet(resp), false};
+    }
+    uint32_t user_id = 0;
+    int err = db::user::cancel_user(*g, req.username(), req.password(), user_id);
+    r->set_err(static_cast<protocol::user::ErrCode>(err));
+    fprintf(stdout, "[handler] cancel username=%s -> err=%d uid=%u\n",
+            req.username().c_str(), err, user_id);
+
+    TaskResult result{task.fd, user_packet(resp), false};
+    if (err == protocol::user::ERR_SUCCESS && task.user_id != 0 && task.user_id == user_id) {
+        result.unbind_user = true;
+    }
+    return result;
 }
 
 TaskResult on_user_packet(const Task& task, const char* body, size_t body_len) {
