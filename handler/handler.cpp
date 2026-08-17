@@ -90,11 +90,12 @@ TaskResult on_login(const Task& task, const protocol::user::LoginRequest& req) {
         // user_id 非 0: 主线程把该连接绑定为该用户
         TaskResult result{task.fd, user_packet(resp), false, info.user_id()};
 
-        // 系统通知: 向所有好友推送"该用户已上线"
+        // 系统通知: 向所有好友推送"该用户已上线" (自身除外, 自加好友不通知自己)
         std::vector<uint32_t> friends;
         if (db::user::friend_ids(*g, info.user_id(), friends) == protocol::user::ERR_SUCCESS) {
             std::string notice = info.nickname() + " 已上线";
             for (uint32_t fid : friends) {
+                if (fid == info.user_id()) continue;
                 result.pushes.push_back(make_system_notify(fid, notice));
             }
         }
@@ -126,6 +127,7 @@ TaskResult on_logout(const Task& task, const protocol::user::LogoutRequest& req)
         if (db::user::friend_ids(*g, req.user_id(), friends) == protocol::user::ERR_SUCCESS) {
             std::string notice = nickname + " 已下线";
             for (uint32_t fid : friends) {
+                if (fid == req.user_id()) continue;
                 result.pushes.push_back(make_system_notify(fid, notice));
             }
         }
@@ -154,10 +156,13 @@ TaskResult on_friend_request(const Task& task, const protocol::user::FriendReque
     r->set_friend_id(req.friend_id());
     TaskResult result={task.fd, user_packet(resp), false};
 
-    std::string nick;
-    db::user::get_nickname(*g,task.user_id,nick);
-    std::string notice="You received a friend request from "+nick+",user id="+std::to_string(task.user_id);
-    result.pushes.push_back(make_system_notify(req.friend_id(),notice));
+    // 仅申请成功时才向对方推送"收到好友申请"通知(失败如自加/已拉黑不打扰)
+    if (g && err == protocol::user::ERR_SUCCESS) {
+        std::string nick;
+        db::user::get_nickname(*g,task.user_id,nick);
+        std::string notice="You received a friend request from "+nick+",user id="+std::to_string(task.user_id);
+        result.pushes.push_back(make_system_notify(req.friend_id(),notice));
+    }
     return result;
 }
 
@@ -191,10 +196,13 @@ TaskResult on_friend_del(const Task& task, const protocol::user::FriendDelReques
     r->set_err(static_cast<protocol::user::ErrCode>(err));
 
     TaskResult result={task.fd, user_packet(resp), false};
-    std::string nick;
-    db::user::get_nickname(*g,req.friend_id(),nick);
-    std::string notice=nick+" userid="+std::to_string(req.friend_id())+" have been removed from your friend list";
-    result.pushes.push_back(make_system_notify(task.user_id,notice));
+
+    if (g && err == protocol::user::ERR_SUCCESS) {
+        std::string nick;
+        db::user::get_nickname(*g,req.friend_id(),nick);
+        std::string notice=nick+" userid="+std::to_string(req.friend_id())+" have been removed from your friend list";
+        result.pushes.push_back(make_system_notify(task.user_id,notice));
+    }
 
     return result;
 }
@@ -204,10 +212,10 @@ TaskResult on_friend_check(const Task& task, const protocol::user::FriendCheckRe
     auto* r = resp.mutable_friend_check_resp(); 
     if (task.user_id == 0) {
         r->set_err(protocol::user::ERR_NOT_LOGGED_IN);
-        return {task.fd, user_packet(resp), false};
+        return {task.fd, user_packet(resp), false}; 
     }
     DbGuard g(db_pool());
-    int err = protocol::user::ERR_SYSTEM;
+    int err = protocol::user::ERR_SYSTEM; 
     bool is_friend = false;         
     std::string nickname;
     if (g) err = db::user::friend_check(*g, task.user_id, req.friend_id(), is_friend, nickname);
@@ -215,7 +223,7 @@ TaskResult on_friend_check(const Task& task, const protocol::user::FriendCheckRe
     r->set_is_friend(is_friend);
     r->set_nickname(nickname); 
     return {task.fd, user_packet(resp), false};
-}
+} 
 
 TaskResult on_friend_block(const Task& task, const protocol::user::FriendBlockRequest& req) {
     protocol::user::UserPacket resp;
@@ -231,13 +239,16 @@ TaskResult on_friend_block(const Task& task, const protocol::user::FriendBlockRe
     r->set_err(static_cast<protocol::user::ErrCode>(err));
 
     TaskResult result={task.fd, user_packet(resp), false};
-    std::string nick;
-    db::user::get_nickname(*g,req.friend_id(),nick);
-    std::string notice=nick+" userid="+std::to_string(req.friend_id())+" have been blocked";
-    result.pushes.push_back(make_system_notify(task.user_id,notice));
-    db::user::get_nickname(*g,task.user_id,nick);
-    notice="You've been blocked by "+nick+" userid= "+std::to_string(task.user_id);
-    result.pushes.push_back(make_system_notify(req.friend_id(),notice));
+
+    if (g && err == protocol::user::ERR_SUCCESS) {
+        std::string nick;
+        db::user::get_nickname(*g,req.friend_id(),nick);
+        std::string notice=nick+" userid="+std::to_string(req.friend_id())+" have been blocked";
+        result.pushes.push_back(make_system_notify(task.user_id,notice));
+        db::user::get_nickname(*g,task.user_id,nick);
+        notice="You've been blocked by "+nick+" userid= "+std::to_string(task.user_id);
+        result.pushes.push_back(make_system_notify(req.friend_id(),notice));
+    }
     return result;
 }
 
@@ -312,8 +323,14 @@ TaskResult on_chat_send(const Task& task, const protocol::chat::ChatSendRequest&
         return {task.fd, chat_packet(resp), false};
     }
 
-    // 好友规则: 若 to 之前申请了 from, from 主动发私聊即视为接受
-    db::user::friend_accept_by_chat(*g, task.user_id, req.to_id());
+    // 非好友禁止私聊。
+    // 例外: 若 to 之前申请了 from, from 回这条私聊即视为接受好友请求,
+    //      该消息本身就是建立好友关系的入口, 允许发送。
+    if (!db::user::friend_are_friends(*g, task.user_id, req.to_id()) &&
+        !db::user::friend_accept_by_chat(*g, task.user_id, req.to_id())) {
+        r->set_err(protocol::user::ERR_NOT_FRIEND);
+        return {task.fd, chat_packet(resp), false};
+    }
 
     uint64_t msg_id = 0, ts = 0;
     int err = db::chat::save_message(*g, task.user_id, req.to_id(),

@@ -57,6 +57,15 @@ int register_user(Db& db, const std::string& username, const std::string& passwo
     unsigned long long last_id = 0;
     if (!db.execute(sql, nullptr, &last_id)) return protocol::user::ERR_SYSTEM;
     user_id = static_cast<uint32_t>(last_id);
+
+    // 3. 注册即自动成为自己的好友: 插入 (user_id, user_id, status=1) 记录,
+    //    该关系无法通过 friend_del 删除(见 friend_del 的自引用拦截)。
+    std::string self_friend =
+        "INSERT INTO friends(user_id,friend_id,status,remark,ts) VALUES(" +
+        std::to_string(user_id) + "," + std::to_string(user_id) + ",1,'self'," +
+        std::to_string(now_sec()) + ")";
+    if (!db.execute(self_friend)) return protocol::user::ERR_SYSTEM;
+
     return protocol::user::ERR_SUCCESS;
 }
 
@@ -127,6 +136,8 @@ int friend_pending_list(Db& db, uint32_t user_id,
 }
 
 int friend_del(Db& db, uint32_t user_id, uint32_t friend_id) {
+    // 不允许删除与自身的好友关系(注册时自动建立)
+    if (user_id == friend_id) return protocol::user::ERR_INVALID_PARAM;
     std::string sql =
         "DELETE FROM friends WHERE (user_id=" + std::to_string(user_id) +
         " AND friend_id=" + std::to_string(friend_id) + ")" +
@@ -183,6 +194,21 @@ bool friend_is_blocked(Db& db, uint32_t user_id, uint32_t peer_id) {
         return false;
     });
     return blocked;
+}
+
+bool friend_are_friends(Db& db, uint32_t user_id, uint32_t peer_id) {
+    // 任一方向存在 status=1 即视为好友(接受时双方向都写 status=1)
+    std::string sql =
+        "SELECT 1 FROM friends WHERE status=1 AND (user_id=" + std::to_string(user_id) +
+        " AND friend_id=" + std::to_string(peer_id) +
+        " OR user_id=" + std::to_string(peer_id) +
+        " AND friend_id=" + std::to_string(user_id) + ") LIMIT 1";
+    bool found = false;
+    db.query(sql, [&](const std::vector<std::string>&) {
+        found = true;
+        return false;
+    });
+    return found;
 }
 
 bool friend_accept_by_chat(Db& db, uint32_t from_id, uint32_t to_id) {

@@ -23,6 +23,7 @@
 #include "../database/db_config.hpp"
 #include "../database/db_pool.hpp"
 #include "../database/db_init.hpp"
+#include "db_admin.hpp"
 
 static volatile bool g_running = true;
 
@@ -100,6 +101,9 @@ int main(int argc,char* argv[]){
      });
      
      fprintf(stdout,"[init] thread pool started\n");
+
+     // 运行期数据库查看控制台: stdin 输入命令实时查询底层数据(只读)。
+     dbadmin::start_console();
 
      recv_send rs_tool;
 

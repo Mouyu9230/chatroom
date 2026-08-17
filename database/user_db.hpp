@@ -22,6 +22,7 @@ bool user_exists(Db&, uint32_t user_id);
 
 // 注册新用户。成功时 user_id 输出新分配的 id, 返回 ERR_SUCCESS;
 // 用户名已存在返回 ERR_USER_EXISTS。
+// 注册成功即自动建立与自身的好友关系((user_id, user_id, status=1))。
 int register_user(Db&, const std::string& username, const std::string& password,
                   const std::string& nickname, uint32_t& user_id);
 
@@ -42,7 +43,8 @@ int friend_request(Db&, uint32_t from_id, uint32_t to_id, const std::string& rem
 int friend_pending_list(Db&, uint32_t user_id,
                         std::vector<protocol::user::FriendPendingItem>& items);
 
-// 删除好友(双向删除)。
+// 删除好友(双向删除)。与自身的好友关系不可删除(注册时自动建立),
+// 自引用删除返回 ERR_INVALID_PARAM。
 int friend_del(Db&, uint32_t user_id, uint32_t friend_id);
 
 // 查询是否好友(任一方向 accepted)。is_friend 输出结果, nickname 输出好友昵称。
@@ -62,6 +64,10 @@ bool friend_accept_by_chat(Db&, uint32_t from_id, uint32_t to_id);
 // 任一方向已拉黑(blocks 表存在 blocker/blockee 为双方任一侧的记录)。
 // 用于聊天发送前拦截(handler::on_chat_send)与加好友前拦截(friend_request)。
 bool friend_is_blocked(Db&, uint32_t user_id, uint32_t peer_id);
+
+// 是否互为好友(任一方向存在 status=1 记录)。
+// 用于聊天发送/历史拉取前拦截(handler::on_chat_send / on_chat_history)。
+bool friend_are_friends(Db&, uint32_t user_id, uint32_t peer_id);
 
 // 获取某用户所有已建立好友关系(status=1, 双向已接受)的好友 user_id 列表。
 int friend_ids(Db&, uint32_t user_id, std::vector<uint32_t>& out);

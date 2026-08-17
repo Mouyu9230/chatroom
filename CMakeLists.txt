@@ -56,6 +56,7 @@ set(COMMON_INCLUDES
 # ---- server ----
 add_executable(server
     server/server.cpp
+    server/db_admin.cpp
     handler/handler.cpp
     ${NETWORK_SOURCES}
     ${DATABASE_SOURCES}

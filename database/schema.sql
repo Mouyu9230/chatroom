@@ -5,6 +5,8 @@
 --  status 含义 (friends 表):
 --    0 = pending 待处理申请
 --    1 = accepted 已建立好友关系
+--  注册用户自动插入一条自身好友关系 (user_id, user_id, status=1),
+--  该行不可通过 friend_del 删除(见 user_db.cpp friend_del 自引用拦截)。
 --  拉黑独立存于 blocks 表(blocker_id → blockee_id), 不改动 friends 好友状态,
 --  仅用于判别消息能否发送(见 friend_is_blocked)。
 -- ============================================================
