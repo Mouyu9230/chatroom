@@ -400,7 +400,7 @@ int main(int argc, char* argv[]) {
             if (sscanf(line, "%*s %127s %127s", username, password) != 2) {
                 fprintf(stderr, "usage: login <username> <password>\n");
                 continue;
-            }
+            } 
             protocol::user::UserPacket req;
             auto* r = req.mutable_login_req();
             r->set_username(username);
@@ -410,9 +410,9 @@ int main(int argc, char* argv[]) {
                 const auto& rr = resp.login_resp();
                 fprintf(stdout, "[login] err=%s(%d)", err_name(rr.err()), static_cast<int>(rr.err()));
                 if (rr.err() == protocol::user::ERR_SUCCESS) {
-                    g_uid = rr.user_id();
+                    g_uid = rr.user_id(); 
                     snprintf(g_username, sizeof(g_username), "%s", username);
-                    fprintf(stdout, " user_id=%u nickname=%s",
+                    fprintf(stdout, " user_id=%u nickname=%s",  
                             rr.user_id(), rr.user().nickname().c_str());
                 }
                 fprintf(stdout, "\n");

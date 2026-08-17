@@ -98,10 +98,9 @@ int logout_user(Db& db, uint32_t user_id) {
     return protocol::user::ERR_SUCCESS;
 }
 
-int cancel_user(Db& db, const std::string& username, const std::string& password,
+int verify_user(Db& db, const std::string& username, const std::string& password,
                 uint32_t& user_id) {
     user_id = 0;
-    // 1. 凭据校验, 取得 user_id
     std::string sel = "SELECT user_id FROM users WHERE username='" + db.escape(username) +
                       "' AND password='" + db.escape(password) + "'";
     if (!db.query(sel, [&](const std::vector<std::string>& row) {
@@ -111,8 +110,11 @@ int cancel_user(Db& db, const std::string& username, const std::string& password
         return protocol::user::ERR_SYSTEM;
     }
     if (user_id == 0) return protocol::user::ERR_INVALID_USER;
+    return protocol::user::ERR_SUCCESS;
+}
 
-    // 2. 删除关联数据(双向)与账号本身
+int cancel_user(Db& db, uint32_t user_id) {
+    // 删除关联数据(双向)与账号本身
     std::string u = std::to_string(user_id);
     std::string dels[] = {
         "DELETE FROM friends WHERE user_id=" + u + " OR friend_id=" + u,
