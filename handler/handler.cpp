@@ -80,7 +80,8 @@ TaskResult on_login(const Task& task, const protocol::user::LoginRequest& req) {
         return {task.fd, user_packet(resp), false};
     }
     protocol::user::UserInfo info;
-    int err = db::user::login_user(*g, req.username(), req.password(), info);
+    uint64_t last_offline_ts = 0;
+    int err = db::user::login_user(*g, req.username(), req.password(), info, last_offline_ts);
     r->set_err(static_cast<protocol::user::ErrCode>(err));
     if (err == protocol::user::ERR_SUCCESS) {
         r->set_user_id(info.user_id());
@@ -89,6 +90,16 @@ TaskResult on_login(const Task& task, const protocol::user::LoginRequest& req) {
                 info.user_id(), info.nickname().c_str());
         // user_id 非 0: 主线程把该连接绑定为该用户
         TaskResult result{task.fd, user_packet(resp), false, info.user_id()};
+
+        std::vector<db::chat::OfflineItem> offline;
+        if (db::chat::offline_summary(*g, info.user_id(), last_offline_ts, offline) ==
+            protocol::user::ERR_SUCCESS) {
+            for (const auto& it : offline) {
+                std::string notice = it.nickname + " 离线期间给你发了 " +
+                                     std::to_string(it.count) + " 条消息";
+                result.pushes.push_back(make_system_notify(info.user_id(), notice));
+            }
+        }
 
         // 系统通知: 向所有好友推送"该用户已上线" (自身除外, 自加好友不通知自己)
         std::vector<uint32_t> friends;
@@ -107,13 +118,13 @@ TaskResult on_login(const Task& task, const protocol::user::LoginRequest& req) {
 TaskResult on_logout(const Task& task, const protocol::user::LogoutRequest& req) {
     protocol::user::UserPacket resp;
     auto* r = resp.mutable_logout_resp();
-
-    DbGuard g(db_pool());
+  
+    DbGuard g(db_pool()); 
 
     
     int err = protocol::user::ERR_SUCCESS;
     if (!g) err = protocol::user::ERR_SYSTEM;
-    else err = db::user::logout_user(*g, req.user_id());
+    else err = db::user::logout_user(*g, req. user_id());
     r->set_err(static_cast<protocol::user::ErrCode>(err));
 
     // 返回 unbind_user: 主线程解绑在线表, 但保持连接不断

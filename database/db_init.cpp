@@ -14,6 +14,7 @@ const char* const kDDL[] = {
     "  nickname   VARCHAR(64)  NOT NULL DEFAULT '',"
     "  created_at BIGINT UNSIGNED NOT NULL,"
     "  online     TINYINT      NOT NULL DEFAULT 0,"
+    "  last_offline_ts BIGINT UNSIGNED NOT NULL DEFAULT 0,"
     "  UNIQUE KEY uk_username (username)"
     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 

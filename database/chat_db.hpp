@@ -19,9 +19,21 @@ namespace chat {
 int save_message(Db&, uint32_t from_id, uint32_t to_id, uint32_t to_type,
                  const std::string& content, uint64_t& msg_id, uint64_t& ts);
 
-// 拉取与 target 的会话历史(双向), 按 msg_id 升序, 最多 limit 条(0<limit<=200)。
+// 拉取与 target 的会话历史(双向), 按 msg_id 降序(从新到旧), 最多 limit 条(0<limit<=200)。
 int query_history(Db&, uint32_t self_id, uint32_t target_id, uint64_t after_msg_id,
                   uint32_t limit, std::vector<protocol::chat::ChatMessage>& out);
+
+// 离线消息摘要项: 发送者 + 昵称 + 条数。
+struct OfflineItem {
+    uint32_t from_id;
+    std::string nickname;
+    uint32_t count;
+};
+
+// 统计 ts > after_ts 期间发给 self 的 1:1 消息, 按发送者分组计数
+// (排除发给自己的消息)。供用户上线时生成"离线时段收到消息"通知。
+int offline_summary(Db&, uint32_t self_id, uint64_t after_ts,
+                    std::vector<OfflineItem>& out);
 
 }  // namespace chat
 }  // namespace db

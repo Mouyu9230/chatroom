@@ -26,11 +26,13 @@ bool user_exists(Db&, uint32_t user_id);
 int register_user(Db&, const std::string& username, const std::string& password,
                   const std::string& nickname, uint32_t& user_id);
 
-// 登录校验。成功时填充 info 并把 online 置 1; 用户名/密码错误返回 ERR_INVALID_USER。
+// 登录校验。成功时填充 info, 把 online 置 1, 并把离线水位 last_offline_ts
+// 推进到当前毫秒时间戳(下一次离线时段从此开始); 用户名/密码错误返回 ERR_INVALID_USER。
+// last_offline_ts 输出本次登录前的水位, 供 handler 计算离线消息摘要(与 messages.ts 同单位: 毫秒)。
 int login_user(Db&, const std::string& username, const std::string& password,
-               protocol::user::UserInfo& info);
+               protocol::user::UserInfo& info, uint64_t& last_offline_ts);
 
-// 登出: online 置 0。
+// 登出: online 置 0, 同时把离线水位推进到当前毫秒时间戳(记录本次离线开始时刻)。
 int logout_user(Db&, uint32_t user_id);
 
 // 凭据校验: 用户名+密码是否正确。成功时 user_id 输出对应用户 id;

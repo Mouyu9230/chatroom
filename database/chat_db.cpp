@@ -35,8 +35,8 @@ int query_history(Db& db, uint32_t self_id, uint32_t target_id, uint64_t after_m
         "SELECT msg_id,from_id,to_id,to_type,content,ts FROM messages"
         " WHERE ((from_id=" + std::to_string(self_id) + " AND to_id=" + std::to_string(target_id) + ")"
         " OR (from_id=" + std::to_string(target_id) + " AND to_id=" + std::to_string(self_id) + "))"
-        " AND msg_id>" + std::to_string(after_msg_id) +
-        " ORDER BY msg_id ASC LIMIT " + std::to_string(limit);
+        " AND msg_id>" + std::to_string(after_msg_id) +  
+        " ORDER BY msg_id DESC LIMIT " + std::to_string(limit);
     if (!db.query(sql, [&](const std::vector<std::string>& row) {
             auto& m = out.emplace_back();
             m.set_msg_id(std::strtoull(row[0].c_str(), nullptr, 10));
@@ -45,6 +45,29 @@ int query_history(Db& db, uint32_t self_id, uint32_t target_id, uint64_t after_m
             m.set_to_type(static_cast<protocol::chat::TargetType>(std::atoi(row[3].c_str())));
             m.set_content(row[4]);
             m.set_ts(std::strtoull(row[5].c_str(), nullptr, 10));
+            return true;
+        })) {
+        return protocol::user::ERR_SYSTEM;
+    }
+    return protocol::user::ERR_SUCCESS;
+}
+
+int offline_summary(Db& db, uint32_t self_id, uint64_t after_ts,
+                    std::vector<OfflineItem>& out) {
+    std::string sql =
+        "SELECT m.from_id, u.nickname, COUNT(*) AS cnt"
+        " FROM messages m JOIN users u ON u.user_id = m.from_id"
+        " WHERE m.to_id=" + std::to_string(self_id) +
+        " AND m.from_id<>" + std::to_string(self_id) +
+        " AND m.ts>" + std::to_string(after_ts) +
+        " AND m.to_type=1"
+        " GROUP BY m.from_id, u.nickname"
+        " ORDER BY cnt DESC";
+    if (!db.query(sql, [&](const std::vector<std::string>& row) {
+            auto& it = out.emplace_back();
+            it.from_id = static_cast<uint32_t>(std::strtoul(row[0].c_str(), nullptr, 10));
+            it.nickname = row[1];
+            it.count = static_cast<uint32_t>(std::strtoul(row[2].c_str(), nullptr, 10));
             return true;
         })) {
         return protocol::user::ERR_SYSTEM;

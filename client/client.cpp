@@ -454,7 +454,7 @@ int main(int argc, char* argv[]) {
             req.mutable_heartbeat_req();
             protocol::user::UserPacket resp;
             if (client::user_request(fd, req, resp)) {
-                fprintf(stdout, "[heartbeat] ok\n");
+                fprintf(stdout, "[heartbeat] ok\n"); 
             }
 
         } else if (strcmp(cmd, "friend") == 0) {

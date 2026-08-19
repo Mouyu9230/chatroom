@@ -13,6 +13,12 @@ uint64_t now_sec() {
         std::chrono::system_clock::now().time_since_epoch()).count());
 }
 
+// 毫秒时间戳, 与 messages.ts 同单位, 用于离线水位 last_offline_ts。
+uint64_t now_ms() {
+    return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count());
+}
+
 // 查询 a→b 方向的 relation status: 返回 -2 表示无记录, 否则返回 status 值。
 int rel_status(Db& db, uint32_t a, uint32_t b) {
     std::string sql = "SELECT status FROM friends WHERE user_id=" + std::to_string(a) +
@@ -70,8 +76,8 @@ int register_user(Db& db, const std::string& username, const std::string& passwo
 }
 
 int login_user(Db& db, const std::string& username, const std::string& password,
-               protocol::user::UserInfo& info) {
-    std::string sql = "SELECT user_id,nickname,created_at,online FROM users WHERE username='" +
+               protocol::user::UserInfo& info, uint64_t& last_offline_ts) {
+    std::string sql = "SELECT user_id,nickname,created_at,online,last_offline_ts FROM users WHERE username='" +
                       db.escape(username) + "' AND password='" + db.escape(password) + "'";
     bool found = false;
     if (!db.query(sql, [&](const std::vector<std::string>& row) {
@@ -80,20 +86,25 @@ int login_user(Db& db, const std::string& username, const std::string& password,
             info.set_nickname(row[1]);
             info.set_created_at(std::strtoull(row[2].c_str(), nullptr, 10));
             info.set_online(row[3] == "1");
+            last_offline_ts = std::strtoull(row[4].c_str(), nullptr, 10);
             return false;
         })) {
         return protocol::user::ERR_SYSTEM;
     }
     if (!found) return protocol::user::ERR_INVALID_USER;
 
-    std::string up = "UPDATE users SET online=1 WHERE user_id=" + std::to_string(info.user_id());
+    // 推进离线水位: 本次在线时段的离线摘要只统计到登录时刻为止。
+    std::string up = "UPDATE users SET online=1, last_offline_ts=" +
+                     std::to_string(now_ms()) + " WHERE user_id=" + std::to_string(info.user_id());
     if (!db.execute(up)) return protocol::user::ERR_SYSTEM;
     info.set_online(true);
     return protocol::user::ERR_SUCCESS;
 }
 
 int logout_user(Db& db, uint32_t user_id) {
-    std::string sql = "UPDATE users SET online=0 WHERE user_id=" + std::to_string(user_id);
+    // 记录本次离线开始时刻, 供下次登录计算离线消息摘要。
+    std::string sql = "UPDATE users SET online=0, last_offline_ts=" +
+                      std::to_string(now_ms()) + " WHERE user_id=" + std::to_string(user_id);
     if (!db.execute(sql)) return protocol::user::ERR_SYSTEM;
     return protocol::user::ERR_SUCCESS;
 }

@@ -66,11 +66,12 @@ int main() {
 
     // ---- login ----
     protocol::user::UserInfo info;
-    r = db::user::login_user(db, "smoke_alice", "alice123", info);
+    uint64_t watermark = 0;
+    r = db::user::login_user(db, "smoke_alice", "alice123", info, watermark);
     check(r == protocol::user::ERR_SUCCESS && info.nickname() == "Alice" && info.online(),
           "login alice ok");
 
-    r = db::user::login_user(db, "smoke_alice", "wrong", info);
+    r = db::user::login_user(db, "smoke_alice", "wrong", info, watermark);
     check(r == protocol::user::ERR_INVALID_USER, "login wrong password -> ERR_INVALID_USER");
 
     // ---- friend request ----
@@ -108,6 +109,14 @@ int main() {
     check(r == protocol::user::ERR_SUCCESS && history.size() == 1 &&
               history[0].content() == "hello bob" && history[0].from_id() == alice_id,
           "query_history returns the message");
+
+    // ---- offline summary (bob 未登录过, 水位为默认 0) ----
+    std::vector<db::chat::OfflineItem> offline;
+    r = db::chat::offline_summary(db, bob_id, 0, offline);
+    check(r == protocol::user::ERR_SUCCESS && offline.size() == 1 &&
+              offline[0].from_id == alice_id && offline[0].nickname == "Alice" &&
+              offline[0].count == 1,
+          "offline_summary groups bob's offline message by sender");
 
     // ---- logout ----
     r = db::user::logout_user(db, alice_id);
