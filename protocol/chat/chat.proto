@@ -51,6 +51,7 @@ message ChatSendRequest {
   uint32 to_id     = 1;
   string content   = 2;   // max 4096
   uint64 client_ts = 3;   // 客户端毫秒时间戳, 未来用于排序
+  TargetType to_type = 4; // 目标类型: 缺省(0)=单聊; 群聊= TARGET_TYPE_GROUP
 }
 
 message ChatSendResponse {
@@ -73,6 +74,7 @@ message ChatHistoryRequest {
   uint32 target_id    = 1;
   uint64 after_msg_id = 2;   // 增量拉取游标
   uint32 limit        = 3;
+  TargetType to_type  = 4;   // 目标类型: 缺省(0)=单聊; 群聊= TARGET_TYPE_GROUP
 }
 
 message ChatHistoryResponse {

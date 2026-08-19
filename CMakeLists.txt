@@ -22,10 +22,11 @@ find_package(PkgConfig REQUIRED)
 pkg_check_modules(MYSQL REQUIRED IMPORTED_TARGET mysqlclient)
 
 # ---- 源码 ----
-# 预生成的 protobuf 文件(user/chat 域)
+# 预生成的 protobuf 文件(user/chat/group 域)
 set(PROTO_PB
     "protocol/user/user.pb.cc"
     "protocol/chat/chat.pb.cc"
+    "protocol/group/group.pb.cc"
 )
 
 # 网络层公共模块(server / client 共用)
@@ -45,11 +46,13 @@ set(DATABASE_SOURCES
     "database/db_init.cpp"
     "database/user_db.cpp"
     "database/chat_db.cpp"
+    "database/group_db.cpp"
 )
 
 set(COMMON_INCLUDES
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/protocol/user   # chat.pb.h 内 #include "user.pb.h"
+    ${CMAKE_CURRENT_SOURCE_DIR}/protocol/user   # chat.pb.h / group.pb.h 内 #include "user.pb.h"
+    ${CMAKE_CURRENT_SOURCE_DIR}/protocol/group
     ${Protobuf_INCLUDE_DIRS}
 )
 
@@ -57,7 +60,10 @@ set(COMMON_INCLUDES
 add_executable(server
     server/server.cpp
     server/db_admin.cpp
-    handler/handler.cpp
+    handler/handler.cpp          # 入口: 域分派 + 共享封包工具
+    handler/user_handler.cpp     # user 域业务
+    handler/chat_handler.cpp     # chat 域业务(1:1 + 群聊收发)
+    handler/group_handler.cpp    # group 域业务
     ${NETWORK_SOURCES}
     ${DATABASE_SOURCES}
     ${PROTO_PB}

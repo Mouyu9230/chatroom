@@ -6,6 +6,7 @@
 #include "../protocol/protocol.hpp"
 #include "../protocol/user/user.pb.h"
 #include "../protocol/chat/chat.pb.h"
+#include "../protocol/group/group.pb.h"
 
 namespace client {
 
@@ -35,5 +36,8 @@ bool user_request(int fd, protocol::user::UserPacket& req, protocol::user::UserP
 
 /// 发送 chat 域请求(信封), 等待匹配的响应信封。
 bool chat_request(int fd, protocol::chat::ChatPacket& req, protocol::chat::ChatPacket& resp);
+
+/// 发送 group 域请求(信封), 等待匹配的响应信封。
+bool group_request(int fd, protocol::group::GroupPacket& req, protocol::group::GroupPacket& resp);
 
 }  // namespace client

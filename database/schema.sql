@@ -48,8 +48,35 @@ CREATE TABLE IF NOT EXISTS messages (
   msg_id  BIGINT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
   from_id INT UNSIGNED NOT NULL,
   to_id   INT UNSIGNED NOT NULL,
-  to_type TINYINT      NOT NULL DEFAULT 1,
+  to_type TINYINT      NOT NULL DEFAULT 1,   -- 1=单聊 2=群聊(to_id 为 group_id)
   content TEXT         NOT NULL,
   ts      BIGINT UNSIGNED NOT NULL,
   KEY idx_to (to_id, msg_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 群组表(to_id 与 users.user_id 在同一命名空间, 查询历史须带 to_type 区分)
+CREATE TABLE IF NOT EXISTS group_info (
+  group_id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  name       VARCHAR(64) NOT NULL,
+  owner_id   INT UNSIGNED NOT NULL,
+  created_at BIGINT UNSIGNED NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 群成员(仅已入群成员; 申请态在 group_applications)。role: 1=群主 2=管理员 3=普通成员
+CREATE TABLE IF NOT EXISTS group_members (
+  id       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  group_id INT UNSIGNED NOT NULL,
+  user_id  INT UNSIGNED NOT NULL,
+  role     TINYINT NOT NULL DEFAULT 3,
+  UNIQUE KEY uk_group_user (group_id, user_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- 加群申请(待审批)
+CREATE TABLE IF NOT EXISTS group_applications (
+  id       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  group_id INT UNSIGNED NOT NULL,
+  user_id  INT UNSIGNED NOT NULL,
+  remark   VARCHAR(128) NOT NULL DEFAULT '',
+  ts       BIGINT UNSIGNED NOT NULL,
+  UNIQUE KEY uk_group_user (group_id, user_id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

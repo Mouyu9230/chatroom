@@ -1,0 +1,181 @@
+syntax = "proto3";
+
+package protocol.group;
+
+import "user.proto";
+
+// ============================================================
+//  group.proto —— 群域
+//
+//  定位: 群组管理与加群审批。
+//  错误码复用 user.proto 的 ErrCode(见其 11~15 群相关取值)。
+//  群聊消息收发走 chat 域(to_type=TARGET_TYPE_GROUP), 本文件只负责
+//  群生命周期 / 成员 / 权限 / 申请审批。
+//
+//  角色: 群主(创建者) > 管理员 > 普通成员。
+//    - 群主: 解散群 / 提升管理员 / 批准拒绝申请 / 移除非自己外任何人
+//    - 管理员: 批准拒绝申请 / 仅能移除普通成员
+//    - 普通成员: 可发群消息、查看成员/历史、不可审批与移除
+// ============================================================
+
+// 群成员角色
+enum GroupRole {
+  GROUP_ROLE_UNSPECIFIED = 0;
+  GROUP_ROLE_OWNER       = 1;   // 群主
+  GROUP_ROLE_ADMIN       = 2;   // 管理员
+  GROUP_ROLE_MEMBER      = 3;   // 普通成员
+}
+
+// 创建群
+message CreateGroupRequest {
+  string name = 1;   // 群名, max 64
+}
+
+message CreateGroupResponse {
+  user.ErrCode err     = 1;
+  uint32       group_id = 2;
+}
+
+// 解散群 (仅群主)
+message DissolveGroupRequest {
+  uint32 group_id = 1;
+}
+
+message DissolveGroupResponse {
+  user.ErrCode err     = 1;
+  uint32       group_id = 2;
+}
+
+// 提升普通成员为管理员 (仅群主)
+message PromoteAdminRequest {
+  uint32 group_id = 1;
+  uint32 user_id  = 2;   // 被提升的成员
+}
+
+message PromoteAdminResponse {
+  user.ErrCode err     = 1;
+  uint32       group_id = 2;
+  uint32       user_id  = 3;
+}
+
+// 申请加入群
+message JoinGroupRequest {
+  uint32 group_id = 1;
+  string remark   = 2;   // 验证消息, max 128
+}
+
+message JoinGroupResponse {
+  user.ErrCode err     = 1;
+  uint32       group_id = 2;
+}
+
+// 批准加群申请 (仅群主/管理员)
+message ApproveJoinRequest {
+  uint32 group_id = 1;
+  uint32 user_id  = 2;   // 申请者
+}
+
+message ApproveJoinResponse {
+  user.ErrCode err     = 1;
+  uint32       group_id = 2;
+  uint32       user_id  = 3;
+}
+
+// 拒绝加群申请 (仅群主/管理员)
+message RejectJoinRequest {
+  uint32 group_id = 1;
+  uint32 user_id  = 2;   // 申请者
+}
+
+message RejectJoinResponse {
+  user.ErrCode err     = 1;
+  uint32       group_id = 2;
+  uint32       user_id  = 3;
+}
+
+// 移除成员 (群主可移非自己外任何人; 管理员仅能移除普通成员)
+message RemoveMemberRequest {
+  uint32 group_id = 1;
+  uint32 user_id  = 2;   // 被移除的成员
+}
+
+message RemoveMemberResponse {
+  user.ErrCode err     = 1;
+  uint32       group_id = 2;
+  uint32       user_id  = 3;
+}
+
+// 待审批加群申请列表 (仅群主/管理员)
+message GroupPendingListRequest {
+  uint32 group_id = 1;
+}
+
+message GroupPendingItem {
+  uint32   user_id = 1;
+  string   nickname = 2;
+  string   remark   = 3;
+  uint64   ts       = 4;   // 申请时间 (unix 秒)
+}
+
+message GroupPendingListResponse {
+  user.ErrCode              err   = 1;
+  repeated GroupPendingItem items = 2;
+}
+
+// 群成员列表 (群内成员可查)
+message GroupMemberListRequest {
+  uint32 group_id = 1;
+}
+
+message GroupMemberItem {
+  uint32    user_id = 1;
+  string    nickname = 2;
+  GroupRole role     = 3;
+}
+
+message GroupMemberListResponse {
+  user.ErrCode               err     = 1;
+  repeated GroupMemberItem   members = 2;
+}
+
+// 我的群列表
+message GroupListRequest {}
+
+message GroupListItem {
+  uint32    group_id = 1;
+  string    name     = 2;
+  GroupRole role     = 3;
+}
+
+message GroupListResponse {
+  user.ErrCode            err    = 1;
+  repeated GroupListItem  groups = 2;
+}
+
+// ------------------------------------------------------------
+//  群域信封 —— 统一本域消息的分派与反序列化
+// ------------------------------------------------------------
+message GroupPacket {
+  oneof body {
+    CreateGroupRequest       create_req            = 1;
+    CreateGroupResponse      create_resp           = 2;
+    DissolveGroupRequest     dissolve_req          = 3;
+    DissolveGroupResponse    dissolve_resp         = 4;
+    PromoteAdminRequest      promote_admin_req     = 5;
+    PromoteAdminResponse     promote_admin_resp    = 6;
+    JoinGroupRequest         join_req              = 7;
+    JoinGroupResponse        join_resp             = 8;
+    ApproveJoinRequest       approve_join_req      = 9;
+    ApproveJoinResponse      approve_join_resp     = 10;
+    RejectJoinRequest        reject_join_req       = 11;
+    RejectJoinResponse       reject_join_resp      = 12;
+    RemoveMemberRequest      remove_member_req     = 13;
+    RemoveMemberResponse     remove_member_resp    = 14;
+    GroupPendingListRequest  pending_list_req      = 15;
+    GroupPendingListResponse pending_list_resp     = 16;
+    GroupMemberListRequest   member_list_req       = 17;
+    GroupMemberListResponse  member_list_resp      = 18;
+    GroupListRequest         group_list_req        = 19;
+    GroupListResponse        group_list_resp       = 20;
+  }
+}

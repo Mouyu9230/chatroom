@@ -31,11 +31,37 @@ int save_message(Db& db, uint32_t from_id, uint32_t to_id, uint32_t to_type,
 int query_history(Db& db, uint32_t self_id, uint32_t target_id, uint64_t after_msg_id,
                   uint32_t limit, std::vector<protocol::chat::ChatMessage>& out) {
     if (limit == 0 || limit > 200) limit = 50;
+    // 限定 to_type=1: 群 id 与用户 id 共用 to_id 命名空间, 防止 1:1 历史串出群消息
     std::string sql =
         "SELECT msg_id,from_id,to_id,to_type,content,ts FROM messages"
         " WHERE ((from_id=" + std::to_string(self_id) + " AND to_id=" + std::to_string(target_id) + ")"
         " OR (from_id=" + std::to_string(target_id) + " AND to_id=" + std::to_string(self_id) + "))"
-        " AND msg_id>" + std::to_string(after_msg_id) +  
+        " AND to_type=1"
+        " AND msg_id>" + std::to_string(after_msg_id) +
+        " ORDER BY msg_id DESC LIMIT " + std::to_string(limit);
+    if (!db.query(sql, [&](const std::vector<std::string>& row) {
+            auto& m = out.emplace_back();
+            m.set_msg_id(std::strtoull(row[0].c_str(), nullptr, 10));
+            m.set_from_id(static_cast<uint32_t>(std::strtoul(row[1].c_str(), nullptr, 10)));
+            m.set_to_id(static_cast<uint32_t>(std::strtoul(row[2].c_str(), nullptr, 10)));
+            m.set_to_type(static_cast<protocol::chat::TargetType>(std::atoi(row[3].c_str())));
+            m.set_content(row[4]);
+            m.set_ts(std::strtoull(row[5].c_str(), nullptr, 10));
+            return true;
+        })) {
+        return protocol::user::ERR_SYSTEM;
+    }
+    return protocol::user::ERR_SUCCESS;
+}
+
+int query_group_history(Db& db, uint32_t group_id, uint64_t after_msg_id,
+                        uint32_t limit, std::vector<protocol::chat::ChatMessage>& out) {
+    if (limit == 0 || limit > 200) limit = 50;
+    std::string sql =
+        "SELECT msg_id,from_id,to_id,to_type,content,ts FROM messages"
+        " WHERE to_id=" + std::to_string(group_id) +
+        " AND to_type=" + std::to_string(protocol::chat::TARGET_TYPE_GROUP) +
+        " AND msg_id>" + std::to_string(after_msg_id) +
         " ORDER BY msg_id DESC LIMIT " + std::to_string(limit);
     if (!db.query(sql, [&](const std::vector<std::string>& row) {
             auto& m = out.emplace_back();

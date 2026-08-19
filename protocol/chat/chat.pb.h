@@ -471,8 +471,9 @@ class ChatSendRequest final :
 
   enum : int {
     kContentFieldNumber = 2,
-    kClientTsFieldNumber = 3,
     kToIdFieldNumber = 1,
+    kToTypeFieldNumber = 4,
+    kClientTsFieldNumber = 3,
   };
   // string content = 2;
   void clear_content();
@@ -488,15 +489,6 @@ class ChatSendRequest final :
   std::string* _internal_mutable_content();
   public:
 
-  // uint64 client_ts = 3;
-  void clear_client_ts();
-  uint64_t client_ts() const;
-  void set_client_ts(uint64_t value);
-  private:
-  uint64_t _internal_client_ts() const;
-  void _internal_set_client_ts(uint64_t value);
-  public:
-
   // uint32 to_id = 1;
   void clear_to_id();
   uint32_t to_id() const;
@@ -504,6 +496,24 @@ class ChatSendRequest final :
   private:
   uint32_t _internal_to_id() const;
   void _internal_set_to_id(uint32_t value);
+  public:
+
+  // .protocol.chat.TargetType to_type = 4;
+  void clear_to_type();
+  ::protocol::chat::TargetType to_type() const;
+  void set_to_type(::protocol::chat::TargetType value);
+  private:
+  ::protocol::chat::TargetType _internal_to_type() const;
+  void _internal_set_to_type(::protocol::chat::TargetType value);
+  public:
+
+  // uint64 client_ts = 3;
+  void clear_client_ts();
+  uint64_t client_ts() const;
+  void set_client_ts(uint64_t value);
+  private:
+  uint64_t _internal_client_ts() const;
+  void _internal_set_client_ts(uint64_t value);
   public:
 
   // @@protoc_insertion_point(class_scope:protocol.chat.ChatSendRequest)
@@ -515,8 +525,9 @@ class ChatSendRequest final :
   typedef void DestructorSkippable_;
   struct Impl_ {
     ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr content_;
-    uint64_t client_ts_;
     uint32_t to_id_;
+    int to_type_;
+    uint64_t client_ts_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -975,6 +986,7 @@ class ChatHistoryRequest final :
     kAfterMsgIdFieldNumber = 2,
     kTargetIdFieldNumber = 1,
     kLimitFieldNumber = 3,
+    kToTypeFieldNumber = 4,
   };
   // uint64 after_msg_id = 2;
   void clear_after_msg_id();
@@ -1003,6 +1015,15 @@ class ChatHistoryRequest final :
   void _internal_set_limit(uint32_t value);
   public:
 
+  // .protocol.chat.TargetType to_type = 4;
+  void clear_to_type();
+  ::protocol::chat::TargetType to_type() const;
+  void set_to_type(::protocol::chat::TargetType value);
+  private:
+  ::protocol::chat::TargetType _internal_to_type() const;
+  void _internal_set_to_type(::protocol::chat::TargetType value);
+  public:
+
   // @@protoc_insertion_point(class_scope:protocol.chat.ChatHistoryRequest)
  private:
   class _Internal;
@@ -1014,6 +1035,7 @@ class ChatHistoryRequest final :
     uint64_t after_msg_id_;
     uint32_t target_id_;
     uint32_t limit_;
+    int to_type_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   };
   union { Impl_ _impl_; };
@@ -1874,6 +1896,26 @@ inline void ChatSendRequest::set_client_ts(uint64_t value) {
   // @@protoc_insertion_point(field_set:protocol.chat.ChatSendRequest.client_ts)
 }
 
+// .protocol.chat.TargetType to_type = 4;
+inline void ChatSendRequest::clear_to_type() {
+  _impl_.to_type_ = 0;
+}
+inline ::protocol::chat::TargetType ChatSendRequest::_internal_to_type() const {
+  return static_cast< ::protocol::chat::TargetType >(_impl_.to_type_);
+}
+inline ::protocol::chat::TargetType ChatSendRequest::to_type() const {
+  // @@protoc_insertion_point(field_get:protocol.chat.ChatSendRequest.to_type)
+  return _internal_to_type();
+}
+inline void ChatSendRequest::_internal_set_to_type(::protocol::chat::TargetType value) {
+  
+  _impl_.to_type_ = value;
+}
+inline void ChatSendRequest::set_to_type(::protocol::chat::TargetType value) {
+  _internal_set_to_type(value);
+  // @@protoc_insertion_point(field_set:protocol.chat.ChatSendRequest.to_type)
+}
+
 // -------------------------------------------------------------------
 
 // ChatSendResponse
@@ -2094,6 +2136,26 @@ inline void ChatHistoryRequest::_internal_set_limit(uint32_t value) {
 inline void ChatHistoryRequest::set_limit(uint32_t value) {
   _internal_set_limit(value);
   // @@protoc_insertion_point(field_set:protocol.chat.ChatHistoryRequest.limit)
+}
+
+// .protocol.chat.TargetType to_type = 4;
+inline void ChatHistoryRequest::clear_to_type() {
+  _impl_.to_type_ = 0;
+}
+inline ::protocol::chat::TargetType ChatHistoryRequest::_internal_to_type() const {
+  return static_cast< ::protocol::chat::TargetType >(_impl_.to_type_);
+}
+inline ::protocol::chat::TargetType ChatHistoryRequest::to_type() const {
+  // @@protoc_insertion_point(field_get:protocol.chat.ChatHistoryRequest.to_type)
+  return _internal_to_type();
+}
+inline void ChatHistoryRequest::_internal_set_to_type(::protocol::chat::TargetType value) {
+  
+  _impl_.to_type_ = value;
+}
+inline void ChatHistoryRequest::set_to_type(::protocol::chat::TargetType value) {
+  _internal_set_to_type(value);
+  // @@protoc_insertion_point(field_set:protocol.chat.ChatHistoryRequest.to_type)
 }
 
 // -------------------------------------------------------------------

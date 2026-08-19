@@ -2,10 +2,11 @@
 
 namespace {
 
-// 与 schema.sql 一致的 DDL。字段与 user.proto / chat.proto 实体对齐:
+// 与 schema.sql 一致的 DDL。字段与 user.proto / chat.proto / group.proto 实体对齐:
 //   users    —— UserInfo / Register / Login
 //   friends  —— 好友系统(FriendRequest/Pending/Del/Check/Block)
 //   messages —— ChatMessage(ChatSend / History)
+//   group_info / group_members / group_applications —— 群域(群主/管理员/申请审批)
 const char* const kDDL[] = {
     "CREATE TABLE IF NOT EXISTS users ("
     "  user_id    INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
@@ -44,6 +45,30 @@ const char* const kDDL[] = {
     "  content TEXT         NOT NULL,"
     "  ts      BIGINT UNSIGNED NOT NULL,"
     "  KEY idx_to (to_id, msg_id)"
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    "CREATE TABLE IF NOT EXISTS group_info ("
+    "  group_id   INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
+    "  name       VARCHAR(64) NOT NULL,"
+    "  owner_id   INT UNSIGNED NOT NULL,"
+    "  created_at BIGINT UNSIGNED NOT NULL"
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    "CREATE TABLE IF NOT EXISTS group_members ("
+    "  id       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
+    "  group_id INT UNSIGNED NOT NULL,"
+    "  user_id  INT UNSIGNED NOT NULL,"
+    "  role     TINYINT NOT NULL DEFAULT 3,"
+    "  UNIQUE KEY uk_group_user (group_id, user_id)"
+    ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
+
+    "CREATE TABLE IF NOT EXISTS group_applications ("
+    "  id       INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,"
+    "  group_id INT UNSIGNED NOT NULL,"
+    "  user_id  INT UNSIGNED NOT NULL,"
+    "  remark   VARCHAR(128) NOT NULL DEFAULT '',"
+    "  ts       BIGINT UNSIGNED NOT NULL,"
+    "  UNIQUE KEY uk_group_user (group_id, user_id)"
     ") ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",
 };
 

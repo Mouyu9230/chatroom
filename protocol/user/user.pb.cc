@@ -711,17 +711,20 @@ const char descriptor_table_protodef_user_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "stem_notify\030\025 \001(\0132\033.protocol.user.System"
   "NotifyH\000\022=\n\022user_status_notify\030\026 \001(\0132\037.p"
   "rotocol.user.UserStatusNotifyH\000B\006\n\004body*"
-  "\347\001\n\007ErrCode\022\017\n\013ERR_SUCCESS\020\000\022\016\n\nERR_SYST"
+  "\346\002\n\007ErrCode\022\017\n\013ERR_SUCCESS\020\000\022\016\n\nERR_SYST"
   "EM\020\001\022\025\n\021ERR_INVALID_PARAM\020\002\022\024\n\020ERR_INVAL"
   "ID_USER\020\003\022\023\n\017ERR_USER_EXISTS\020\004\022\025\n\021ERR_NO"
   "T_LOGGED_IN\020\005\022\014\n\010ERR_FULL\020\006\022\022\n\016ERR_NOT_F"
   "RIEND\020\007\022\026\n\022ERR_ALREADY_FRIEND\020\010\022\017\n\013ERR_B"
-  "LOCKED\020\t\022\027\n\023ERR_REQUEST_PENDING\020\nb\006proto"
-  "3"
+  "LOCKED\020\t\022\027\n\023ERR_REQUEST_PENDING\020\n\022\027\n\023ERR"
+  "_GROUP_NOT_FOUND\020\013\022\030\n\024ERR_NOT_GROUP_MEMB"
+  "ER\020\014\022\027\n\023ERR_NOT_GROUP_ADMIN\020\r\022\027\n\023ERR_NOT"
+  "_GROUP_OWNER\020\016\022\030\n\024ERR_ALREADY_IN_GROUP\020\017"
+  "b\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_user_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_user_2eproto = {
-    false, false, 3041, descriptor_table_protodef_user_2eproto,
+    false, false, 3168, descriptor_table_protodef_user_2eproto,
     "user.proto",
     &descriptor_table_user_2eproto_once, nullptr, 0, 25,
     schemas, file_default_instances, TableStruct_user_2eproto::offsets,
@@ -753,6 +756,11 @@ bool ErrCode_IsValid(int value) {
     case 8:
     case 9:
     case 10:
+    case 11:
+    case 12:
+    case 13:
+    case 14:
+    case 15:
       return true;
     default:
       return false;

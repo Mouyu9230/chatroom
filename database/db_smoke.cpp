@@ -18,6 +18,7 @@
 #include "db_init.hpp"
 #include "user_db.hpp"
 #include "chat_db.hpp"
+#include "group_db.hpp"
 
 int main() {
     DbConfig cfg;
@@ -129,20 +130,118 @@ int main() {
               !db::user::friend_is_blocked(db, bob_id, alice_id),
           "friend_del clears block -> chat would return ERR_NOT_FRIEND");
 
+    // ---- group: create / join / approve / reject / promote / remove / dissolve ----
+    uint32_t gid = 0;
+    r = db::group::create_group(db, alice_id, "SmokeGroup", gid);
+    check(r == protocol::user::ERR_SUCCESS && gid > 0, "create_group alice -> owner");
+    uint32_t gid2 = 0;
+    r = db::group::create_group(db, alice_id, "", gid2);
+    check(r == protocol::user::ERR_INVALID_PARAM, "create_group empty name -> ERR_INVALID_PARAM");
+
+    check(db::group::group_exists(db, gid), "group_exists");
+    check(db::group::member_role(db, gid, alice_id) == protocol::group::GROUP_ROLE_OWNER,
+          "alice is owner");
+    r = db::group::join_request(db, alice_id, gid, "self");
+    check(r == protocol::user::ERR_ALREADY_IN_GROUP, "owner join own group -> ERR_ALREADY_IN_GROUP");
+
+    r = db::group::join_request(db, bob_id, gid, "hi");
+    check(r == protocol::user::ERR_SUCCESS, "bob join_request");
+    r = db::group::join_request(db, bob_id, gid, "again");
+    check(r == protocol::user::ERR_REQUEST_PENDING, "bob duplicate join -> ERR_REQUEST_PENDING");
+
+    uint32_t carol_id = 0;
+    r = db::user::register_user(db, "smoke_carol", "carol123", "Carol", carol_id);
+    check(r == protocol::user::ERR_SUCCESS && carol_id > 0, "register carol");
+
+    std::vector<protocol::group::GroupPendingItem> gpending;
+    r = db::group::pending_list(db, alice_id, gid, gpending);
+    check(r == protocol::user::ERR_SUCCESS && gpending.size() == 1 &&
+              gpending[0].user_id() == bob_id && gpending[0].nickname() == "Bob",
+          "owner pending_list has bob");
+
+    r = db::group::approve_join(db, alice_id, gid, bob_id);
+    check(r == protocol::user::ERR_SUCCESS, "owner approve bob");
+    check(db::group::member_role(db, gid, bob_id) == protocol::group::GROUP_ROLE_MEMBER,
+          "bob now member");
+    r = db::group::approve_join(db, alice_id, gid, bob_id);
+    check(r == protocol::user::ERR_ALREADY_IN_GROUP, "double approve -> ERR_ALREADY_IN_GROUP");
+
+    r = db::group::join_request(db, carol_id, gid, "me too");
+    check(r == protocol::user::ERR_SUCCESS, "carol join_request");
+    r = db::group::reject_join(db, alice_id, gid, carol_id);
+    check(r == protocol::user::ERR_SUCCESS, "owner reject carol");
+
+    r = db::group::promote_admin(db, alice_id, gid, bob_id);
+    check(r == protocol::user::ERR_SUCCESS, "owner promote bob to admin");
+    check(db::group::member_role(db, gid, bob_id) == protocol::group::GROUP_ROLE_ADMIN,
+          "bob now admin");
+
+    // 管理员仅能移除普通成员
+    r = db::group::join_request(db, carol_id, gid, "try again");
+    check(r == protocol::user::ERR_SUCCESS, "carol rejoin_request");
+    r = db::group::approve_join(db, alice_id, gid, carol_id);
+    check(r == protocol::user::ERR_SUCCESS, "owner approve carol");
+    r = db::group::remove_member(db, bob_id, gid, carol_id);
+    check(r == protocol::user::ERR_SUCCESS, "admin remove member carol");
+    check(db::group::member_role(db, gid, carol_id) == 0, "carol removed");
+    r = db::group::remove_member(db, bob_id, gid, alice_id);
+    check(r == protocol::user::ERR_INVALID_PARAM, "admin cannot remove owner");
+    r = db::group::remove_member(db, bob_id, gid, bob_id);
+    check(r == protocol::user::ERR_INVALID_PARAM, "cannot remove self");
+
+    // 成员列表 & 我的群
+    std::vector<protocol::group::GroupMemberItem> members;
+    r = db::group::member_list(db, bob_id, gid, members);
+    check(r == protocol::user::ERR_SUCCESS && members.size() == 2, "member_list has 2");
+    std::vector<protocol::group::GroupListItem> mine;
+    r = db::group::my_groups(db, bob_id, mine);
+    check(r == protocol::user::ERR_SUCCESS && mine.size() == 1 && mine[0].group_id() == gid,
+          "my_groups bob has group");
+
+    // 群消息落库 + 群历史 + 1:1 历史不串(防御 to_type 区分)
+    uint64_t gmsg_id = 0;
+    r = db::chat::save_message(db, bob_id, gid, protocol::chat::TARGET_TYPE_GROUP,
+                               "hello group", gmsg_id, ts);
+    check(r == protocol::user::ERR_SUCCESS && gmsg_id > 0, "save group message");
+    std::vector<protocol::chat::ChatMessage> ghist;
+    r = db::chat::query_group_history(db, gid, 0, 50, ghist);
+    check(r == protocol::user::ERR_SUCCESS && ghist.size() == 1 &&
+              ghist[0].content() == "hello group" &&
+              ghist[0].to_type() == protocol::chat::TARGET_TYPE_GROUP,
+          "query_group_history returns group message");
+    history.clear();
+    r = db::chat::query_history(db, alice_id, bob_id, 0, 50, history);
+    check(r == protocol::user::ERR_SUCCESS &&
+              (history.empty() || history[0].content() != "hello group"),
+          "1:1 history does not leak group message");
+
+    // 解散
+    r = db::group::dissolve_group(db, alice_id, gid);
+    check(r == protocol::user::ERR_SUCCESS, "owner dissolve group");
+    check(!db::group::group_exists(db, gid), "group gone after dissolve");
+    r = db::group::pending_list(db, alice_id, gid, gpending);
+    check(r == protocol::user::ERR_GROUP_NOT_FOUND, "pending after dissolve -> ERR_GROUP_NOT_FOUND");
+
     // ---- logout ----
     r = db::user::logout_user(db, alice_id);
     check(r == protocol::user::ERR_SUCCESS, "logout alice");
 
     // ---- cleanup test data ----
     db::user::friend_del(db, alice_id, bob_id);
+    db.execute("DELETE FROM group_applications WHERE group_id=" + std::to_string(gid));
+    db.execute("DELETE FROM group_members WHERE group_id=" + std::to_string(gid));
+    db.execute("DELETE FROM group_info WHERE group_id=" + std::to_string(gid));
     db.execute("DELETE FROM messages WHERE from_id IN (" + std::to_string(alice_id) + "," +
-               std::to_string(bob_id) + ") OR to_id IN (" + std::to_string(alice_id) + "," +
-               std::to_string(bob_id) + ")");
+               std::to_string(bob_id) + "," + std::to_string(carol_id) + ") OR to_id IN (" +
+               std::to_string(alice_id) + "," + std::to_string(bob_id) + "," +
+               std::to_string(carol_id) + ") OR (to_id=" + std::to_string(gid) +
+               " AND to_type=2)");
     db.execute("DELETE FROM friends WHERE user_id IN (" + std::to_string(alice_id) + "," +
-               std::to_string(bob_id) + ") OR friend_id IN (" + std::to_string(alice_id) + "," +
-               std::to_string(bob_id) + ")");
+               std::to_string(bob_id) + "," + std::to_string(carol_id) + ") OR friend_id IN (" +
+               std::to_string(alice_id) + "," + std::to_string(bob_id) + "," +
+               std::to_string(carol_id) + ")");
     db.execute("DELETE FROM users WHERE user_id IN (" + std::to_string(alice_id) + "," +
-               std::to_string(bob_id) + ")");
+               std::to_string(bob_id) + "," + std::to_string(carol_id) + ")");
     fprintf(stdout, "[db_smoke] cleanup done\n");
 
     fprintf(stdout, "\n[db_smoke] ===== %s (%d failed) =====\n",

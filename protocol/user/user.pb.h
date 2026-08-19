@@ -167,12 +167,17 @@ enum ErrCode : int {
   ERR_ALREADY_FRIEND = 8,
   ERR_BLOCKED = 9,
   ERR_REQUEST_PENDING = 10,
+  ERR_GROUP_NOT_FOUND = 11,
+  ERR_NOT_GROUP_MEMBER = 12,
+  ERR_NOT_GROUP_ADMIN = 13,
+  ERR_NOT_GROUP_OWNER = 14,
+  ERR_ALREADY_IN_GROUP = 15,
   ErrCode_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   ErrCode_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool ErrCode_IsValid(int value);
 constexpr ErrCode ErrCode_MIN = ERR_SUCCESS;
-constexpr ErrCode ErrCode_MAX = ERR_REQUEST_PENDING;
+constexpr ErrCode ErrCode_MAX = ERR_ALREADY_IN_GROUP;
 constexpr int ErrCode_ARRAYSIZE = ErrCode_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ErrCode_descriptor();

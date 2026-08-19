@@ -43,8 +43,9 @@ PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORIT
 PROTOBUF_CONSTEXPR ChatSendRequest::ChatSendRequest(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.content_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.client_ts_)*/uint64_t{0u}
   , /*decltype(_impl_.to_id_)*/0u
+  , /*decltype(_impl_.to_type_)*/0
+  , /*decltype(_impl_.client_ts_)*/uint64_t{0u}
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct ChatSendRequestDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ChatSendRequestDefaultTypeInternal()
@@ -88,6 +89,7 @@ PROTOBUF_CONSTEXPR ChatHistoryRequest::ChatHistoryRequest(
     /*decltype(_impl_.after_msg_id_)*/uint64_t{0u}
   , /*decltype(_impl_.target_id_)*/0u
   , /*decltype(_impl_.limit_)*/0u
+  , /*decltype(_impl_.to_type_)*/0
   , /*decltype(_impl_._cached_size_)*/{}} {}
 struct ChatHistoryRequestDefaultTypeInternal {
   PROTOBUF_CONSTEXPR ChatHistoryRequestDefaultTypeInternal()
@@ -167,6 +169,7 @@ const uint32_t TableStruct_chat_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   PROTOBUF_FIELD_OFFSET(::protocol::chat::ChatSendRequest, _impl_.to_id_),
   PROTOBUF_FIELD_OFFSET(::protocol::chat::ChatSendRequest, _impl_.content_),
   PROTOBUF_FIELD_OFFSET(::protocol::chat::ChatSendRequest, _impl_.client_ts_),
+  PROTOBUF_FIELD_OFFSET(::protocol::chat::ChatSendRequest, _impl_.to_type_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::protocol::chat::ChatSendResponse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -192,6 +195,7 @@ const uint32_t TableStruct_chat_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   PROTOBUF_FIELD_OFFSET(::protocol::chat::ChatHistoryRequest, _impl_.target_id_),
   PROTOBUF_FIELD_OFFSET(::protocol::chat::ChatHistoryRequest, _impl_.after_msg_id_),
   PROTOBUF_FIELD_OFFSET(::protocol::chat::ChatHistoryRequest, _impl_.limit_),
+  PROTOBUF_FIELD_OFFSET(::protocol::chat::ChatHistoryRequest, _impl_.to_type_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::protocol::chat::ChatHistoryResponse, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -224,12 +228,12 @@ const uint32_t TableStruct_chat_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
   { 0, -1, -1, sizeof(::protocol::chat::ChatMessage)},
   { 12, -1, -1, sizeof(::protocol::chat::ChatSendRequest)},
-  { 21, -1, -1, sizeof(::protocol::chat::ChatSendResponse)},
-  { 30, -1, -1, sizeof(::protocol::chat::ChatNotify)},
-  { 37, -1, -1, sizeof(::protocol::chat::ChatHistoryRequest)},
-  { 46, -1, -1, sizeof(::protocol::chat::ChatHistoryResponse)},
-  { 54, -1, -1, sizeof(::protocol::chat::ChatReadAck)},
-  { 61, -1, -1, sizeof(::protocol::chat::ChatPacket)},
+  { 22, -1, -1, sizeof(::protocol::chat::ChatSendResponse)},
+  { 31, -1, -1, sizeof(::protocol::chat::ChatNotify)},
+  { 38, -1, -1, sizeof(::protocol::chat::ChatHistoryRequest)},
+  { 48, -1, -1, sizeof(::protocol::chat::ChatHistoryResponse)},
+  { 56, -1, -1, sizeof(::protocol::chat::ChatReadAck)},
+  { 63, -1, -1, sizeof(::protocol::chat::ChatPacket)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -248,37 +252,40 @@ const char descriptor_table_protodef_chat_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "\206\001\n\013ChatMessage\022\016\n\006msg_id\030\001 \001(\004\022\017\n\007from_"
   "id\030\002 \001(\r\022\r\n\005to_id\030\003 \001(\r\022*\n\007to_type\030\004 \001(\016"
   "2\031.protocol.chat.TargetType\022\017\n\007content\030\005"
-  " \001(\t\022\n\n\002ts\030\006 \001(\004\"D\n\017ChatSendRequest\022\r\n\005t"
+  " \001(\t\022\n\n\002ts\030\006 \001(\004\"p\n\017ChatSendRequest\022\r\n\005t"
   "o_id\030\001 \001(\r\022\017\n\007content\030\002 \001(\t\022\021\n\tclient_ts"
-  "\030\003 \001(\004\"Z\n\020ChatSendResponse\022#\n\003err\030\001 \001(\0162"
-  "\026.protocol.user.ErrCode\022\016\n\006msg_id\030\002 \001(\004\022"
-  "\021\n\tserver_ts\030\003 \001(\004\"5\n\nChatNotify\022\'\n\003msg\030"
-  "\001 \001(\0132\032.protocol.chat.ChatMessage\"L\n\022Cha"
-  "tHistoryRequest\022\021\n\ttarget_id\030\001 \001(\r\022\024\n\014af"
-  "ter_msg_id\030\002 \001(\004\022\r\n\005limit\030\003 \001(\r\"h\n\023ChatH"
-  "istoryResponse\022,\n\010messages\030\001 \003(\0132\032.proto"
-  "col.chat.ChatMessage\022#\n\003err\030\002 \001(\0162\026.prot"
-  "ocol.user.ErrCode\"\035\n\013ChatReadAck\022\016\n\006msg_"
-  "id\030\001 \001(\004\"\321\002\n\nChatPacket\0222\n\010send_req\030\001 \001("
-  "\0132\036.protocol.chat.ChatSendRequestH\000\0224\n\ts"
-  "end_resp\030\002 \001(\0132\037.protocol.chat.ChatSendR"
-  "esponseH\000\022+\n\006notify\030\003 \001(\0132\031.protocol.cha"
-  "t.ChatNotifyH\000\0228\n\013history_req\030\004 \001(\0132!.pr"
-  "otocol.chat.ChatHistoryRequestH\000\022:\n\014hist"
-  "ory_resp\030\005 \001(\0132\".protocol.chat.ChatHisto"
-  "ryResponseH\000\022.\n\010read_ack\030\006 \001(\0132\032.protoco"
-  "l.chat.ChatReadAckH\000B\006\n\004body*V\n\nTargetTy"
-  "pe\022\033\n\027TARGET_TYPE_UNSPECIFIED\020\000\022\024\n\020TARGE"
-  "T_TYPE_USER\020\001\022\025\n\021TARGET_TYPE_GROUP\020\002*C\n\007"
-  "MsgType\022\021\n\rMSG_TYPE_TEXT\020\000\022\022\n\016MSG_TYPE_I"
-  "MAGE\020\001\022\021\n\rMSG_TYPE_FILE\020\002b\006proto3"
+  "\030\003 \001(\004\022*\n\007to_type\030\004 \001(\0162\031.protocol.chat."
+  "TargetType\"Z\n\020ChatSendResponse\022#\n\003err\030\001 "
+  "\001(\0162\026.protocol.user.ErrCode\022\016\n\006msg_id\030\002 "
+  "\001(\004\022\021\n\tserver_ts\030\003 \001(\004\"5\n\nChatNotify\022\'\n\003"
+  "msg\030\001 \001(\0132\032.protocol.chat.ChatMessage\"x\n"
+  "\022ChatHistoryRequest\022\021\n\ttarget_id\030\001 \001(\r\022\024"
+  "\n\014after_msg_id\030\002 \001(\004\022\r\n\005limit\030\003 \001(\r\022*\n\007t"
+  "o_type\030\004 \001(\0162\031.protocol.chat.TargetType\""
+  "h\n\023ChatHistoryResponse\022,\n\010messages\030\001 \003(\013"
+  "2\032.protocol.chat.ChatMessage\022#\n\003err\030\002 \001("
+  "\0162\026.protocol.user.ErrCode\"\035\n\013ChatReadAck"
+  "\022\016\n\006msg_id\030\001 \001(\004\"\321\002\n\nChatPacket\0222\n\010send_"
+  "req\030\001 \001(\0132\036.protocol.chat.ChatSendReques"
+  "tH\000\0224\n\tsend_resp\030\002 \001(\0132\037.protocol.chat.C"
+  "hatSendResponseH\000\022+\n\006notify\030\003 \001(\0132\031.prot"
+  "ocol.chat.ChatNotifyH\000\0228\n\013history_req\030\004 "
+  "\001(\0132!.protocol.chat.ChatHistoryRequestH\000"
+  "\022:\n\014history_resp\030\005 \001(\0132\".protocol.chat.C"
+  "hatHistoryResponseH\000\022.\n\010read_ack\030\006 \001(\0132\032"
+  ".protocol.chat.ChatReadAckH\000B\006\n\004body*V\n\n"
+  "TargetType\022\033\n\027TARGET_TYPE_UNSPECIFIED\020\000\022"
+  "\024\n\020TARGET_TYPE_USER\020\001\022\025\n\021TARGET_TYPE_GRO"
+  "UP\020\002*C\n\007MsgType\022\021\n\rMSG_TYPE_TEXT\020\000\022\022\n\016MS"
+  "G_TYPE_IMAGE\020\001\022\021\n\rMSG_TYPE_FILE\020\002b\006proto"
+  "3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_chat_2eproto_deps[1] = {
   &::descriptor_table_user_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_chat_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_chat_2eproto = {
-    false, false, 1113, descriptor_table_protodef_chat_2eproto,
+    false, false, 1201, descriptor_table_protodef_chat_2eproto,
     "chat.proto",
     &descriptor_table_chat_2eproto_once, descriptor_table_chat_2eproto_deps, 1, 8,
     schemas, file_default_instances, TableStruct_chat_2eproto::offsets,
@@ -679,8 +686,9 @@ ChatSendRequest::ChatSendRequest(const ChatSendRequest& from)
   ChatSendRequest* const _this = this; (void)_this;
   new (&_impl_) Impl_{
       decltype(_impl_.content_){}
-    , decltype(_impl_.client_ts_){}
     , decltype(_impl_.to_id_){}
+    , decltype(_impl_.to_type_){}
+    , decltype(_impl_.client_ts_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
@@ -692,9 +700,9 @@ ChatSendRequest::ChatSendRequest(const ChatSendRequest& from)
     _this->_impl_.content_.Set(from._internal_content(), 
       _this->GetArenaForAllocation());
   }
-  ::memcpy(&_impl_.client_ts_, &from._impl_.client_ts_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.to_id_) -
-    reinterpret_cast<char*>(&_impl_.client_ts_)) + sizeof(_impl_.to_id_));
+  ::memcpy(&_impl_.to_id_, &from._impl_.to_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.client_ts_) -
+    reinterpret_cast<char*>(&_impl_.to_id_)) + sizeof(_impl_.client_ts_));
   // @@protoc_insertion_point(copy_constructor:protocol.chat.ChatSendRequest)
 }
 
@@ -704,8 +712,9 @@ inline void ChatSendRequest::SharedCtor(
   (void)is_message_owned;
   new (&_impl_) Impl_{
       decltype(_impl_.content_){}
-    , decltype(_impl_.client_ts_){uint64_t{0u}}
     , decltype(_impl_.to_id_){0u}
+    , decltype(_impl_.to_type_){0}
+    , decltype(_impl_.client_ts_){uint64_t{0u}}
     , /*decltype(_impl_._cached_size_)*/{}
   };
   _impl_.content_.InitDefault();
@@ -739,9 +748,9 @@ void ChatSendRequest::Clear() {
   (void) cached_has_bits;
 
   _impl_.content_.ClearToEmpty();
-  ::memset(&_impl_.client_ts_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.to_id_) -
-      reinterpret_cast<char*>(&_impl_.client_ts_)) + sizeof(_impl_.to_id_));
+  ::memset(&_impl_.to_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.client_ts_) -
+      reinterpret_cast<char*>(&_impl_.to_id_)) + sizeof(_impl_.client_ts_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -774,6 +783,15 @@ const char* ChatSendRequest::_InternalParse(const char* ptr, ::_pbi::ParseContex
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
           _impl_.client_ts_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
           CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .protocol.chat.TargetType to_type = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_to_type(static_cast<::protocol::chat::TargetType>(val));
         } else
           goto handle_unusual;
         continue;
@@ -828,6 +846,13 @@ uint8_t* ChatSendRequest::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt64ToArray(3, this->_internal_client_ts(), target);
   }
 
+  // .protocol.chat.TargetType to_type = 4;
+  if (this->_internal_to_type() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      4, this->_internal_to_type(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -851,14 +876,20 @@ size_t ChatSendRequest::ByteSizeLong() const {
         this->_internal_content());
   }
 
-  // uint64 client_ts = 3;
-  if (this->_internal_client_ts() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_client_ts());
-  }
-
   // uint32 to_id = 1;
   if (this->_internal_to_id() != 0) {
     total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_to_id());
+  }
+
+  // .protocol.chat.TargetType to_type = 4;
+  if (this->_internal_to_type() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_to_type());
+  }
+
+  // uint64 client_ts = 3;
+  if (this->_internal_client_ts() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt64SizePlusOne(this->_internal_client_ts());
   }
 
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
@@ -882,11 +913,14 @@ void ChatSendRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const 
   if (!from._internal_content().empty()) {
     _this->_internal_set_content(from._internal_content());
   }
-  if (from._internal_client_ts() != 0) {
-    _this->_internal_set_client_ts(from._internal_client_ts());
-  }
   if (from._internal_to_id() != 0) {
     _this->_internal_set_to_id(from._internal_to_id());
+  }
+  if (from._internal_to_type() != 0) {
+    _this->_internal_set_to_type(from._internal_to_type());
+  }
+  if (from._internal_client_ts() != 0) {
+    _this->_internal_set_client_ts(from._internal_client_ts());
   }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
@@ -912,11 +946,11 @@ void ChatSendRequest::InternalSwap(ChatSendRequest* other) {
       &other->_impl_.content_, rhs_arena
   );
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(ChatSendRequest, _impl_.to_id_)
-      + sizeof(ChatSendRequest::_impl_.to_id_)
-      - PROTOBUF_FIELD_OFFSET(ChatSendRequest, _impl_.client_ts_)>(
-          reinterpret_cast<char*>(&_impl_.client_ts_),
-          reinterpret_cast<char*>(&other->_impl_.client_ts_));
+      PROTOBUF_FIELD_OFFSET(ChatSendRequest, _impl_.client_ts_)
+      + sizeof(ChatSendRequest::_impl_.client_ts_)
+      - PROTOBUF_FIELD_OFFSET(ChatSendRequest, _impl_.to_id_)>(
+          reinterpret_cast<char*>(&_impl_.to_id_),
+          reinterpret_cast<char*>(&other->_impl_.to_id_));
 }
 
 ::PROTOBUF_NAMESPACE_ID::Metadata ChatSendRequest::GetMetadata() const {
@@ -1375,12 +1409,13 @@ ChatHistoryRequest::ChatHistoryRequest(const ChatHistoryRequest& from)
       decltype(_impl_.after_msg_id_){}
     , decltype(_impl_.target_id_){}
     , decltype(_impl_.limit_){}
+    , decltype(_impl_.to_type_){}
     , /*decltype(_impl_._cached_size_)*/{}};
 
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::memcpy(&_impl_.after_msg_id_, &from._impl_.after_msg_id_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.limit_) -
-    reinterpret_cast<char*>(&_impl_.after_msg_id_)) + sizeof(_impl_.limit_));
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.to_type_) -
+    reinterpret_cast<char*>(&_impl_.after_msg_id_)) + sizeof(_impl_.to_type_));
   // @@protoc_insertion_point(copy_constructor:protocol.chat.ChatHistoryRequest)
 }
 
@@ -1392,6 +1427,7 @@ inline void ChatHistoryRequest::SharedCtor(
       decltype(_impl_.after_msg_id_){uint64_t{0u}}
     , decltype(_impl_.target_id_){0u}
     , decltype(_impl_.limit_){0u}
+    , decltype(_impl_.to_type_){0}
     , /*decltype(_impl_._cached_size_)*/{}
   };
 }
@@ -1420,8 +1456,8 @@ void ChatHistoryRequest::Clear() {
   (void) cached_has_bits;
 
   ::memset(&_impl_.after_msg_id_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.limit_) -
-      reinterpret_cast<char*>(&_impl_.after_msg_id_)) + sizeof(_impl_.limit_));
+      reinterpret_cast<char*>(&_impl_.to_type_) -
+      reinterpret_cast<char*>(&_impl_.after_msg_id_)) + sizeof(_impl_.to_type_));
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
@@ -1452,6 +1488,15 @@ const char* ChatHistoryRequest::_InternalParse(const char* ptr, ::_pbi::ParseCon
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
           _impl_.limit_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .protocol.chat.TargetType to_type = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 32)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_to_type(static_cast<::protocol::chat::TargetType>(val));
         } else
           goto handle_unusual;
         continue;
@@ -1502,6 +1547,13 @@ uint8_t* ChatHistoryRequest::_InternalSerialize(
     target = ::_pbi::WireFormatLite::WriteUInt32ToArray(3, this->_internal_limit(), target);
   }
 
+  // .protocol.chat.TargetType to_type = 4;
+  if (this->_internal_to_type() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      4, this->_internal_to_type(), target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -1533,6 +1585,12 @@ size_t ChatHistoryRequest::ByteSizeLong() const {
     total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_limit());
   }
 
+  // .protocol.chat.TargetType to_type = 4;
+  if (this->_internal_to_type() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_to_type());
+  }
+
   return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
 }
 
@@ -1560,6 +1618,9 @@ void ChatHistoryRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, con
   if (from._internal_limit() != 0) {
     _this->_internal_set_limit(from._internal_limit());
   }
+  if (from._internal_to_type() != 0) {
+    _this->_internal_set_to_type(from._internal_to_type());
+  }
   _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
 }
 
@@ -1578,8 +1639,8 @@ void ChatHistoryRequest::InternalSwap(ChatHistoryRequest* other) {
   using std::swap;
   _internal_metadata_.InternalSwap(&other->_internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(ChatHistoryRequest, _impl_.limit_)
-      + sizeof(ChatHistoryRequest::_impl_.limit_)
+      PROTOBUF_FIELD_OFFSET(ChatHistoryRequest, _impl_.to_type_)
+      + sizeof(ChatHistoryRequest::_impl_.to_type_)
       - PROTOBUF_FIELD_OFFSET(ChatHistoryRequest, _impl_.after_msg_id_)>(
           reinterpret_cast<char*>(&_impl_.after_msg_id_),
           reinterpret_cast<char*>(&other->_impl_.after_msg_id_));

@@ -24,8 +24,9 @@ const uint16_t MAGIC_NUM = 0x9230;
 //  具体消息由信封的 oneof 分支区分, 见 user.proto / chat.proto。
 // ============================================================
 enum Domain : uint8_t {
-    DOMAIN_USER = 1,
-    DOMAIN_CHAT = 2,
+    DOMAIN_USER  = 1,
+    DOMAIN_CHAT  = 2,
+    DOMAIN_GROUP = 3,   // 群域: body 为 protocol.group.GroupPacket(oneof)
 };
 
 #pragma pack(1)

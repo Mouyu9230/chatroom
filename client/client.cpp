@@ -1,6 +1,7 @@
 #include "client.hpp"
 
 #include "../network/socket/socket.hpp"
+#include "../protocol/group/group.pb.h"
 
 #include <sys/socket.h>
 #include <unistd.h>
@@ -115,6 +116,23 @@ protocol::chat::ChatPacket::BodyCase expected_chat_resp_case(const protocol::cha
     }
 }
 
+protocol::group::GroupPacket::BodyCase expected_group_resp_case(const protocol::group::GroupPacket& req) {
+    using P = protocol::group::GroupPacket;
+    switch (req.body_case()) {
+        case P::kCreateReq:       return P::kCreateResp;
+        case P::kDissolveReq:     return P::kDissolveResp;
+        case P::kPromoteAdminReq: return P::kPromoteAdminResp;
+        case P::kJoinReq:         return P::kJoinResp;
+        case P::kApproveJoinReq:  return P::kApproveJoinResp;
+        case P::kRejectJoinReq:   return P::kRejectJoinResp;
+        case P::kRemoveMemberReq: return P::kRemoveMemberResp;
+        case P::kPendingListReq:  return P::kPendingListResp;
+        case P::kMemberListReq:   return P::kMemberListResp;
+        case P::kGroupListReq:    return P::kGroupListResp;
+        default:                  return P::BODY_NOT_SET;
+    }
+}
+
 // ------------------------------------------------------------
 //  后台收包线程: 常驻读 socket
 //    推送类(ChatNotify/SystemNotify/UserStatusNotify) → 实时打印
@@ -157,7 +175,12 @@ void reader_loop(int fd) {
             protocol::chat::ChatPacket cp;
             if (cp.ParseFromArray(body, hdr->body_len) && cp.has_notify()) {
                 const auto& m = cp.notify().msg();
-                fprintf(stdout, "\n[chat<<] from=%u: %s\n", m.from_id(), m.content().c_str());
+                if (m.to_type() == protocol::chat::TARGET_TYPE_GROUP) {
+                    fprintf(stdout, "\n[group<<] gid=%u from=%u: %s\n",
+                            m.to_id(), m.from_id(), m.content().c_str());
+                } else {
+                    fprintf(stdout, "\n[chat<<] from=%u: %s\n", m.from_id(), m.content().c_str());
+                }
                 fflush(stdout);
                 continue;   // 推送已打印, 不入队
             }
@@ -302,6 +325,37 @@ bool chat_request(int fd, protocol::chat::ChatPacket& req, protocol::chat::ChatP
     }
 }
 
+bool group_request(int fd, protocol::group::GroupPacket& req, protocol::group::GroupPacket& resp) {
+    std::vector<char> packet = build_packet(protocol::DOMAIN_GROUP, req);
+    if (!send_exact(fd, packet.data(), packet.size())) {
+        fprintf(stderr, "[client] send failed\n");
+        return false;
+    }
+    protocol::group::GroupPacket::BodyCase expect = expected_group_resp_case(req);
+    for (;;) {
+        std::vector<char> pkt = pop_packet();
+        if (pkt.empty()) {
+            fprintf(stderr, "[client] connection closed\n");
+            return false;
+        }
+        auto* hdr = reinterpret_cast<const protocol::packet_header*>(pkt.data());
+        if (hdr->type != protocol::DOMAIN_GROUP) {
+            fprintf(stdout, "[client] <skip> non-group domain=%u\n", hdr->type);
+            continue;
+        }
+        protocol::group::GroupPacket r;
+        if (!r.ParseFromArray(pkt.data() + sizeof(*hdr), hdr->body_len)) {
+            fprintf(stdout, "[client] <skip> bad group body\n");
+            continue;
+        }
+        if (r.body_case() == expect) {
+            resp = std::move(r);
+            return true;
+        }
+        fprintf(stdout, "[client] <skip> group case=%d\n", static_cast<int>(r.body_case()));
+    }
+}
+
 }  // namespace client
 
 // ------------------------------------------------------------
@@ -323,6 +377,11 @@ const char* err_name(int e) {
         case 8: return "ALREADY_FRIEND";
         case 9: return "BLOCKED";
         case 10: return "REQUEST_PENDING";
+        case 11: return "GROUP_NOT_FOUND";
+        case 12: return "NOT_GROUP_MEMBER";
+        case 13: return "NOT_GROUP_ADMIN";
+        case 14: return "NOT_GROUP_OWNER";
+        case 15: return "ALREADY_IN_GROUP";
         default: return "?";
     }
 }
@@ -341,6 +400,18 @@ void print_help() {
             "  friend block   <friend_id> [on|off]\n"
             "  chat     <to_id> <text>\n"
             "  history  <target_id> [limit]\n"
+            "  gcreate  <name>\n"
+            "  gdissolve <group_id>\n"
+            "  gjoin    <group_id> [remark]\n"
+            "  gapprove <group_id> <user_id>\n"
+            "  greject  <group_id> <user_id>\n"
+            "  gpending <group_id>\n"
+            "  gmembers <group_id>\n"
+            "  gremove  <group_id> <user_id>\n"
+            "  gpromote <group_id> <user_id>\n"
+            "  glist\n"
+            "  gchat    <group_id> <text>\n"
+            "  ghistory <group_id> [limit]\n"
             "  help\n"
             "  quit / exit\n");
 }
@@ -602,6 +673,227 @@ int main(int argc, char* argv[]) {
                     fprintf(stdout, "  #%llu %s(%u) -> %u: %s\n",
                             static_cast<unsigned long long>(m.msg_id()),
                             m.from_id() == g_uid ? "me" : "peer",
+                            m.from_id(), m.to_id(), m.content().c_str());
+                }
+            }
+
+        } else if (strcmp(cmd, "gcreate") == 0) {
+            char name[64] = {0};
+            if (sscanf(line, "%*s %63s", name) != 1) {
+                fprintf(stderr, "usage: gcreate <name>\n");
+                continue;
+            }
+            protocol::group::GroupPacket req;
+            req.mutable_create_req()->set_name(name);
+            protocol::group::GroupPacket resp;
+            if (client::group_request(fd, req, resp)) {
+                const auto& rr = resp.create_resp();
+                fprintf(stdout, "[gcreate] err=%s(%d) group_id=%u\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()), rr.group_id());
+            }
+
+        } else if (strcmp(cmd, "gdissolve") == 0) {
+            uint32_t gid = 0;
+            if (sscanf(line, "%*s %u", &gid) != 1) {
+                fprintf(stderr, "usage: gdissolve <group_id>\n");
+                continue;
+            }
+            protocol::group::GroupPacket req;
+            req.mutable_dissolve_req()->set_group_id(gid);
+            protocol::group::GroupPacket resp;
+            if (client::group_request(fd, req, resp)) {
+                const auto& rr = resp.dissolve_resp();
+                fprintf(stdout, "[gdissolve] err=%s(%d) group_id=%u\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()), rr.group_id());
+            }
+
+        } else if (strcmp(cmd, "gjoin") == 0) {
+            uint32_t gid = 0;
+            char remark[128] = {0};
+            if (sscanf(line, "%*s %u %127[^\n]", &gid, remark) < 1) {
+                fprintf(stderr, "usage: gjoin <group_id> [remark]\n");
+                continue;
+            }
+            protocol::group::GroupPacket req;
+            auto* r = req.mutable_join_req();
+            r->set_group_id(gid);
+            r->set_remark(remark);
+            protocol::group::GroupPacket resp;
+            if (client::group_request(fd, req, resp)) {
+                const auto& rr = resp.join_resp();
+                fprintf(stdout, "[gjoin] err=%s(%d) group_id=%u\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()), rr.group_id());
+            }
+
+        } else if (strcmp(cmd, "gapprove") == 0) {
+            uint32_t gid = 0, uid = 0;
+            if (sscanf(line, "%*s %u %u", &gid, &uid) != 2) {
+                fprintf(stderr, "usage: gapprove <group_id> <user_id>\n");
+                continue;
+            }
+            protocol::group::GroupPacket req;
+            auto* r = req.mutable_approve_join_req();
+            r->set_group_id(gid);
+            r->set_user_id(uid);
+            protocol::group::GroupPacket resp;
+            if (client::group_request(fd, req, resp)) {
+                const auto& rr = resp.approve_join_resp();
+                fprintf(stdout, "[gapprove] err=%s(%d) group_id=%u user_id=%u\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()),
+                        rr.group_id(), rr.user_id());
+            }
+
+        } else if (strcmp(cmd, "greject") == 0) {
+            uint32_t gid = 0, uid = 0;
+            if (sscanf(line, "%*s %u %u", &gid, &uid) != 2) {
+                fprintf(stderr, "usage: greject <group_id> <user_id>\n");
+                continue;
+            }
+            protocol::group::GroupPacket req;
+            auto* r = req.mutable_reject_join_req();
+            r->set_group_id(gid);
+            r->set_user_id(uid);
+            protocol::group::GroupPacket resp;
+            if (client::group_request(fd, req, resp)) {
+                const auto& rr = resp.reject_join_resp();
+                fprintf(stdout, "[greject] err=%s(%d) group_id=%u user_id=%u\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()),
+                        rr.group_id(), rr.user_id());
+            }
+
+        } else if (strcmp(cmd, "gpending") == 0) {
+            uint32_t gid = 0;
+            if (sscanf(line, "%*s %u", &gid) != 1) {
+                fprintf(stderr, "usage: gpending <group_id>\n");
+                continue;
+            }
+            protocol::group::GroupPacket req;
+            req.mutable_pending_list_req()->set_group_id(gid);
+            protocol::group::GroupPacket resp;
+            if (client::group_request(fd, req, resp)) {
+                const auto& rr = resp.pending_list_resp();
+                fprintf(stdout, "[gpending] err=%s(%d) items=%d\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()), rr.items_size());
+                for (const auto& it : rr.items()) {
+                    fprintf(stdout, "  %u  %s  remark='%s' ts=%llu\n",
+                            it.user_id(), it.nickname().c_str(), it.remark().c_str(),
+                            static_cast<unsigned long long>(it.ts()));
+                }
+            }
+
+        } else if (strcmp(cmd, "gmembers") == 0) {
+            uint32_t gid = 0;
+            if (sscanf(line, "%*s %u", &gid) != 1) {
+                fprintf(stderr, "usage: gmembers <group_id>\n");
+                continue;
+            }
+            protocol::group::GroupPacket req;
+            req.mutable_member_list_req()->set_group_id(gid);
+            protocol::group::GroupPacket resp;
+            if (client::group_request(fd, req, resp)) {
+                const auto& rr = resp.member_list_resp();
+                fprintf(stdout, "[gmembers] err=%s(%d) members=%d\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()), rr.members_size());
+                for (const auto& it : rr.members()) {
+                    fprintf(stdout, "  %u  %s  role=%d\n",
+                            it.user_id(), it.nickname().c_str(), static_cast<int>(it.role()));
+                }
+            }
+
+        } else if (strcmp(cmd, "gremove") == 0) {
+            uint32_t gid = 0, uid = 0;
+            if (sscanf(line, "%*s %u %u", &gid, &uid) != 2) {
+                fprintf(stderr, "usage: gremove <group_id> <user_id>\n");
+                continue;
+            }
+            protocol::group::GroupPacket req;
+            auto* r = req.mutable_remove_member_req();
+            r->set_group_id(gid);
+            r->set_user_id(uid);
+            protocol::group::GroupPacket resp;
+            if (client::group_request(fd, req, resp)) {
+                const auto& rr = resp.remove_member_resp();
+                fprintf(stdout, "[gremove] err=%s(%d) group_id=%u user_id=%u\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()),
+                        rr.group_id(), rr.user_id());
+            }
+
+        } else if (strcmp(cmd, "gpromote") == 0) {
+            uint32_t gid = 0, uid = 0;
+            if (sscanf(line, "%*s %u %u", &gid, &uid) != 2) {
+                fprintf(stderr, "usage: gpromote <group_id> <user_id>\n");
+                continue;
+            }
+            protocol::group::GroupPacket req;
+            auto* r = req.mutable_promote_admin_req();
+            r->set_group_id(gid);
+            r->set_user_id(uid);
+            protocol::group::GroupPacket resp;
+            if (client::group_request(fd, req, resp)) {
+                const auto& rr = resp.promote_admin_resp();
+                fprintf(stdout, "[gpromote] err=%s(%d) group_id=%u user_id=%u\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()),
+                        rr.group_id(), rr.user_id());
+            }
+
+        } else if (strcmp(cmd, "glist") == 0) {
+            protocol::group::GroupPacket req;
+            req.mutable_group_list_req();
+            protocol::group::GroupPacket resp;
+            if (client::group_request(fd, req, resp)) {
+                const auto& rr = resp.group_list_resp();
+                fprintf(stdout, "[glist] err=%s(%d) groups=%d\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()), rr.groups_size());
+                for (const auto& it : rr.groups()) {
+                    fprintf(stdout, "  %u  %s  role=%d\n",
+                            it.group_id(), it.name().c_str(), static_cast<int>(it.role()));
+                }
+            }
+
+        } else if (strcmp(cmd, "gchat") == 0) {
+            uint32_t gid = 0;
+            char content[4096] = {0};
+            if (sscanf(line, "%*s %u %4095[^\n]", &gid, content) < 1) {
+                fprintf(stderr, "usage: gchat <group_id> <text>\n");
+                continue;
+            }
+            protocol::chat::ChatPacket req;
+            auto* r = req.mutable_send_req();
+            r->set_to_id(gid);
+            r->set_to_type(protocol::chat::TARGET_TYPE_GROUP);
+            r->set_content(content);
+            protocol::chat::ChatPacket resp;
+            if (client::chat_request(fd, req, resp)) {
+                const auto& rr = resp.send_resp();
+                fprintf(stdout, "[gchat] err=%s(%d) msg_id=%llu server_ts=%llu\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()),
+                        static_cast<unsigned long long>(rr.msg_id()),
+                        static_cast<unsigned long long>(rr.server_ts()));
+            }
+
+        } else if (strcmp(cmd, "ghistory") == 0) {
+            uint32_t gid = 0;
+            uint32_t limit = 50;
+            int n = sscanf(line, "%*s %u %u", &gid, &limit);
+            if (n < 1) {
+                fprintf(stderr, "usage: ghistory <group_id> [limit]\n");
+                continue;
+            }
+            protocol::chat::ChatPacket req;
+            auto* r = req.mutable_history_req();
+            r->set_target_id(gid);
+            r->set_to_type(protocol::chat::TARGET_TYPE_GROUP);
+            r->set_after_msg_id(0);
+            r->set_limit(limit);
+            protocol::chat::ChatPacket resp;
+            if (client::chat_request(fd, req, resp)) {
+                const auto& rr = resp.history_resp();
+                fprintf(stdout, "[ghistory] err=%s(%d) messages=%d\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()), rr.messages_size());
+                for (const auto& m : rr.messages()) {
+                    fprintf(stdout, "  #%llu %s(%u) -> gid=%u: %s\n",
+                            static_cast<unsigned long long>(m.msg_id()),
+                            m.from_id() == g_uid ? "me" : "member",
                             m.from_id(), m.to_id(), m.content().c_str());
                 }
             }
