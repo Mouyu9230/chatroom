@@ -184,6 +184,13 @@ int friend_del(Db& db, uint32_t user_id, uint32_t friend_id) {
         " AND friend_id=" + std::to_string(friend_id) + ")" +
         " OR (user_id=" + std::to_string(friend_id) + " AND friend_id=" + std::to_string(user_id) + ")";
     if (!db.execute(sql)) return protocol::user::ERR_SYSTEM;
+    // 同时清除双方互拉黑记录: 删除好友后再发消息应报"非好友"(ERR_NOT_FRIEND)
+    // 而非"已拉黑"(ERR_BLOCKED)。
+    std::string unblock =
+        "DELETE FROM blocks WHERE (blocker_id=" + std::to_string(user_id) +
+        " AND blockee_id=" + std::to_string(friend_id) + ")" +
+        " OR (blocker_id=" + std::to_string(friend_id) + " AND blockee_id=" + std::to_string(user_id) + ")";
+    if (!db.execute(unblock)) return protocol::user::ERR_SYSTEM;
     return protocol::user::ERR_SUCCESS;
 }
 

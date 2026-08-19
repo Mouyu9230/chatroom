@@ -7,13 +7,16 @@
 #include <netinet/tcp.h>
 
 #include <cerrno>
+#include <chrono>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <unordered_map>
+#include <unordered_set>
 #include <utility>
 
 #include "../protocol/protocol.hpp"
+#include "../protocol/user/user.pb.h"
 #include "../handler/handler.hpp"
 #include "../network/socket/socket.hpp"
 #include "../network/epoll/epoll.hpp"
@@ -25,7 +28,8 @@
 #include "../database/db_init.hpp"
 #include "db_admin.hpp"
 
-static volatile bool g_running = true;
+// 运行标志。主循环 + dbadmin 控制台线程都会读它(停机时控制台线程退出)。
+volatile bool g_running = true;
 
 extern "C" void handle_signal(int sig) {
     (void)sig;
@@ -36,11 +40,27 @@ extern "C" void handle_signal(int sig) {
 // 登录时绑定、登出/断开时清除; 用于把 ChatNotify 等推送路由到接收方连接。
 static std::unordered_map<uint32_t, int> g_user_to_fd;
 
-// 连接即将关闭时, 若它绑定了用户则清除在线表项。
+// 心跳超时阈值(毫秒): 超过该时长未收到任何包的已登录连接视为登出。
+constexpr uint64_t HEARTBEAT_TIMEOUT_MS = 15000;
+
+// 已投递"合成登出"任务、待其结果返回后关闭的连接。仅主线程访问。
+// 存指针: 连接若被其它路径提前关闭, 其 fd 复用时不会误关新连接。
+static std::unordered_set<Connection*> g_pending_close;
+
+uint64_t now_ms() {
+    return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::system_clock::now().time_since_epoch()).count());
+}
+
+// 连接即将关闭时, 若它绑定了用户则清除在线表项;
+// 若它是"心跳超时待关"连接, 一并从待关集合移除(避免悬挂指针残留)。
 static void clear_user_binding(int fd) {
     Connection* conn = connection_get(fd);
     if (conn != nullptr && conn->user_id() != 0) {
         g_user_to_fd.erase(conn->user_id());
+    }
+    if (conn != nullptr) {
+        g_pending_close.erase(conn);
     }
 }
 
@@ -162,6 +182,16 @@ int main(int argc,char* argv[]){
                     }
                 }
 
+                // 心跳超时触发的合成登出结果已处理: 关闭该连接。
+                // 仅当连接仍存在且仍是投递任务时的那一个才关(防 fd 复用误关新连接)。
+                Connection* rc = connection_get(result.fd);
+                if (rc != nullptr && g_pending_close.erase(rc)) {
+                    clear_user_binding(result.fd);
+                    epoll_main.del(result.fd);
+                    connection_remove(result.fd);
+                    fprintf(stdout, "[close] fd=%d (heartbeat timeout logout)\n", result.fd);
+                }
+
             }
 
         }
@@ -199,6 +229,9 @@ int main(int argc,char* argv[]){
                             fprintf(stderr, "[warn] connection_add failed for fd=%d\n", connfd);
                             continue;
                         }
+                        if (Connection* cnew = connection_get(connfd)) {
+                            cnew->set_last_active(now_ms());
+                        }
                         epoll_main.add(connfd, EPOLLIN);
                         fprintf(stdout, "[accept] fd=%d\n", connfd);
                     }
@@ -235,6 +268,9 @@ int main(int argc,char* argv[]){
                     connection_remove(ev_data_fd);
                     fprintf(stdout, "[close] fd=%d (recv=%d)\n", ev_data_fd, ret);
                     continue;
+                }
+                if (ret > 0) {
+                    conn->set_last_active(now_ms());   // 收到包: 更新活性时间戳
                 }
                 // ret > 0  读到数据; ret == -2 为 EAGAIN(无数据可读), 忽略继续
 
@@ -277,9 +313,48 @@ int main(int argc,char* argv[]){
             }
 
         }//wait结果处理循环结束
- 
+
+        // 心跳超时检测: 每 ~1s 扫描已登录连接活性, 超时视为登出。
+        static uint64_t next_idle_scan_ms = now_ms() + 1000;
+        uint64_t now = now_ms();
+        if (now >= next_idle_scan_ms) {
+            next_idle_scan_ms = now + 1000;
+            for (int i = 0; i < MAX_CONN; ++i) {
+                Connection* c = connection_get(i);
+                if (c == nullptr || c->user_id() == 0) continue;   // 只判已登录连接
+                if (now - c->last_active() <= HEARTBEAT_TIMEOUT_MS) continue;
+
+                fprintf(stdout, "[hb] user=%u fd=%d heartbeat timeout, treat as logout\n",
+                        c->user_id(), c->fd());
+                // 1) 立即停止推送路由到该连接
+                g_user_to_fd.erase(c->user_id());
+                // 2) 投递合成登出任务: 工作线程完成 DB 置离线 + 好友"已下线"通知
+                protocol::user::UserPacket req;
+                req.mutable_logout_req()->set_user_id(c->user_id());
+                std::string body;
+                req.SerializeToString(&body);
+                Task t;
+                t.fd = c->fd();
+                t.user_id = c->user_id();
+                t.data.resize(sizeof(protocol::packet_header) + body.size());
+                auto* hdr = reinterpret_cast<protocol::packet_header*>(t.data.data());
+                hdr->magic = protocol::MAGIC_NUM;
+                hdr->ver = 1;
+                hdr->type = protocol::DOMAIN_USER;
+                hdr->body_len = static_cast<uint32_t>(body.size());
+                std::memcpy(t.data.data() + sizeof(protocol::packet_header),
+                            body.data(), body.size());
+                pool.submit(std::move(t));
+                // 3) 记录待关连接, 结果返回后再关闭
+                g_pending_close.insert(c);
+            }
+        }
 
      }//主循环结束
+
+    // 关闭 stdin: 解除 dbadmin 控制台线程在 getline 上的阻塞(输入到一半时也生效),
+    // 否则进程退出时 glibc 清理 stdin 流会与 getline 的持锁死锁。
+    close(STDIN_FILENO);
 
     fprintf(stdout, "\n[shutdown] stopping thread pool...\n");
     pool.stop();

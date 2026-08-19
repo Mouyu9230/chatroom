@@ -1,10 +1,14 @@
 #include "db_admin.hpp"
 
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
 #include <string>
+#include <sys/select.h>
+#include <sys/time.h>
 #include <thread>
+#include <unistd.h>
 #include <vector>
 
 #include "../database/db.hpp"
@@ -186,7 +190,22 @@ void run_command(const std::string& line) {
 void console_loop() {
     fprintf(stdout, "[admin] DB console ready. type 'help' for commands.\n");
     std::string line;
-    while (std::getline(std::cin, line)) {
+    while (g_running) {
+        // 非阻塞探测 stdin: 有输入才 getline, 否则定期醒来检查服务端是否停机,
+        // 避免无限阻塞在 getline 上(停机时 glibc 清理 stdin 流会与 getline 持锁死锁)。
+        fd_set rfds;
+        FD_ZERO(&rfds);
+        FD_SET(STDIN_FILENO, &rfds);
+        struct timeval tv = {0, 200000};   // 200ms
+        int r = select(STDIN_FILENO + 1, &rfds, nullptr, nullptr, &tv);
+        if (r < 0) {
+            if (errno == EINTR) continue;  // 信号打断, 回循环重查停机标志
+            break;                          // 输入源异常(如 fd 被关闭), 结束控制台
+        }
+        if (r == 0) continue;               // 超时无输入, 回循环检查 g_running
+        if (!FD_ISSET(STDIN_FILENO, &rfds)) continue;
+
+        if (!std::getline(std::cin, line)) break;  // EOF / 读错误
         // 去除首尾空白
         std::string t = line;
         size_t b = t.find_first_not_of(" \t");

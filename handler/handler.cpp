@@ -252,13 +252,16 @@ TaskResult on_friend_block(const Task& task, const protocol::user::FriendBlockRe
     TaskResult result={task.fd, user_packet(resp), false};
 
     if (g && err == protocol::user::ERR_SUCCESS) {
+        // 区分拉黑/解除: 通知文案随 req.block() 变化, 让双方都知晓当前状态。
         std::string nick;
-        db::user::get_nickname(*g,req.friend_id(),nick);
-        std::string notice=nick+" userid="+std::to_string(req.friend_id())+" have been blocked";
-        result.pushes.push_back(make_system_notify(task.user_id,notice));
-        db::user::get_nickname(*g,task.user_id,nick);
-        notice="You've been blocked by "+nick+" userid= "+std::to_string(task.user_id);
-        result.pushes.push_back(make_system_notify(req.friend_id(),notice));
+        const char* subject = req.block() ? "have been blocked" : "have been unblocked";
+        const char* byline  = req.block() ? "You've been blocked by " : "You've been unblocked by ";
+        db::user::get_nickname(*g, req.friend_id(), nick);
+        std::string notice = nick + " userid=" + std::to_string(req.friend_id()) + " " + subject;
+        result.pushes.push_back(make_system_notify(task.user_id, notice));
+        db::user::get_nickname(*g, task.user_id, nick);
+        notice = byline + nick + " userid= " + std::to_string(task.user_id);
+        result.pushes.push_back(make_system_notify(req.friend_id(), notice));
     }
     return result;
 }

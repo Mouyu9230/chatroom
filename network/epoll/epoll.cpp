@@ -2,6 +2,7 @@
 
 #include <unistd.h>
 
+#include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 
@@ -80,7 +81,9 @@ int Epoll::del(int fd) {
 int Epoll::wait(int timeout_ms) {
     int n = epoll_wait(epoll_fd_, events_, max_events_, timeout_ms);
     if (n < 0) {
+        int e = errno;
         perror("epoll_wait");
+        errno = e;   // perror 会改写 errno, 还原以便调用方判断 EINTR
         return -1;
     }
 

@@ -54,8 +54,9 @@ int friend_request(Db&, uint32_t from_id, uint32_t to_id, const std::string& rem
 int friend_pending_list(Db&, uint32_t user_id,
                         std::vector<protocol::user::FriendPendingItem>& items);
 
-// 删除好友(双向删除)。与自身的好友关系不可删除(注册时自动建立),
-// 自引用删除返回 ERR_INVALID_PARAM。
+// 删除好友(双向删除), 同时清除双方互拉黑记录(blocks),
+// 使删除后再发消息报 ERR_NOT_FRIEND 而非 ERR_BLOCKED。
+// 与自身的好友关系不可删除(注册时自动建立), 自引用删除返回 ERR_INVALID_PARAM。
 int friend_del(Db&, uint32_t user_id, uint32_t friend_id);
 
 // 查询是否好友(任一方向 accepted)。is_friend 输出结果, nickname 输出好友昵称。

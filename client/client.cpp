@@ -6,6 +6,7 @@
 #include <unistd.h>
 
 #include <cerrno>
+#include <chrono>
 #include <condition_variable>
 #include <cstdio>
 #include <cstdlib>
@@ -95,7 +96,6 @@ protocol::user::UserPacket::BodyCase expected_user_resp_case(const protocol::use
         case P::kRegisterReq:          return P::kRegisterResp;
         case P::kLoginReq:             return P::kLoginResp;
         case P::kLogoutReq:            return P::kLogoutResp;
-        case P::kHeartbeatReq:         return P::kHeartbeatResp;
         case P::kFriendRequestReq:     return P::kFriendRequestResp;
         case P::kFriendPendingListReq: return P::kFriendPendingListResp;
         case P::kFriendDelReq:         return P::kFriendDelResp;
@@ -164,6 +164,9 @@ void reader_loop(int fd) {
         } else if (hdr->type == protocol::DOMAIN_USER) {
             protocol::user::UserPacket up;
             if (up.ParseFromArray(body, hdr->body_len)) {
+                if (up.has_heartbeat_resp()) {
+                    continue;   // 心跳响应: 心跳线程只发不收, 直接忽略不入队
+                }
                 if (up.has_system_notify()) {
                     fprintf(stdout, "\n[system] %s\n", up.system_notify().content().c_str());
                     fflush(stdout);
@@ -217,6 +220,25 @@ void start_reader(int fd) {
     }
     std::thread(reader_loop, fd).detach();
 }
+
+// 后台心跳线程: 周期性发送 HeartbeatReq, 连接关闭即退出。
+// 服务端据此判定连接活性(收不到包的连接会视为登出被踢)。
+void start_heartbeat(int fd) {
+    static constexpr int kHeartbeatIntervalS = 5;
+    std::thread([fd]() {
+        protocol::user::UserPacket req;
+        req.mutable_heartbeat_req();
+        std::vector<char> pkt = build_packet(protocol::DOMAIN_USER, req);
+        while (!g_closed) {
+            std::this_thread::sleep_for(std::chrono::seconds(kHeartbeatIntervalS));
+            if (g_closed) break;
+            if (!send_packet(fd, pkt)) {
+                fprintf(stderr, "[heartbeat] send failed (connection closed?)\n");
+                break;
+            }
+        }
+    }).detach();
+}  
 
 bool user_request(int fd, protocol::user::UserPacket& req, protocol::user::UserPacket& resp) {
     std::vector<char> packet = build_packet(protocol::DOMAIN_USER, req);
@@ -312,7 +334,6 @@ void print_help() {
             "  login    <username> <password>\n"
             "  logout\n"
             "  cancel   <username> <password>\n"
-            "  heartbeat\n"
             "  friend req     <friend_id> [remark]\n"
             "  friend pending\n"
             "  friend del     <friend_id>\n"
@@ -357,6 +378,7 @@ int main(int argc, char* argv[]) {
     print_help();
 
     client::start_reader(fd);   // 后台线程常驻收包, 推送实时打印
+    client::start_heartbeat(fd);  // 后台线程周期发心跳, 保持连接活性
 
     uint32_t g_uid = 0;        // 当前登录用户 id
     char g_username[128] = {0};  // 当前登录用户名(用于判断注销的是否为当前账号)
@@ -447,14 +469,6 @@ int main(int argc, char* argv[]) {
                     g_uid = 0;
                     g_username[0] = '\0';
                 }
-            }
-
-        } else if (strcmp(cmd, "heartbeat") == 0) {
-            protocol::user::UserPacket req;
-            req.mutable_heartbeat_req();
-            protocol::user::UserPacket resp;
-            if (client::user_request(fd, req, resp)) {
-                fprintf(stdout, "[heartbeat] ok\n"); 
             }
 
         } else if (strcmp(cmd, "friend") == 0) {

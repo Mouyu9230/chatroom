@@ -10,9 +10,13 @@
 //  使用: server 进程运行时在终端输入命令 (见 help), 读 stdin 的
 //        detached 线程; stdin 为 EOF(/dev/null/后台运行) 时线程自行结束。
 // ============================================================
+// 服务端运行标志(server.cpp 定义, 信号处理后置 false)。
+// 控制台线程定期检查它, 服务停机时主动退出, 避免阻塞在 stdin 上导致进程退不出。
+extern volatile bool g_running;
+
 namespace dbadmin {
 
-// 启动 stdin 调试控制台线程(detached, 读到 EOF 或输入 quit/exit 时结束)。
+// 启动 stdin 调试控制台线程(detached, 读到 EOF / 输入 quit/exit / 服务停机时结束)。
 void start_console();
 
 }  // namespace dbadmin

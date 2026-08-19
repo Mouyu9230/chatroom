@@ -12,6 +12,7 @@
 Connection::Connection(int fd)
     : fd_(fd)
     , userid_(0)
+    , last_active_(0)
     , recv_buf_()
     , recv_len_(0)
     , send_buf_()

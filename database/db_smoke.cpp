@@ -118,6 +118,17 @@ int main() {
               offline[0].count == 1,
           "offline_summary groups bob's offline message by sender");
 
+    // ---- block + del: 删除好友应同时清除拉黑状态 ----
+    r = db::user::friend_block(db, alice_id, bob_id, true);
+    check(r == protocol::user::ERR_SUCCESS, "alice block bob");
+    check(db::user::friend_is_blocked(db, bob_id, alice_id),
+          "block visible in reverse direction");
+    r = db::user::friend_del(db, alice_id, bob_id);
+    check(r == protocol::user::ERR_SUCCESS &&
+              !db::user::friend_is_blocked(db, alice_id, bob_id) &&
+              !db::user::friend_is_blocked(db, bob_id, alice_id),
+          "friend_del clears block -> chat would return ERR_NOT_FRIEND");
+
     // ---- logout ----
     r = db::user::logout_user(db, alice_id);
     check(r == protocol::user::ERR_SUCCESS, "logout alice");

@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cstddef>
+#include <cstdint>
 
 const int RECV_BUFFER_SIZE = 8192;
 const int SEND_BUFFER_SIZE = 8192;
@@ -30,9 +31,14 @@ public:
     int send_length() const { return send_len_; }
     void set_send_length(int len) { send_len_ = len; }
 
+    // 上次收到数据的时间戳(毫秒), 用于服务端心跳超时判定。
+    uint64_t last_active() const { return last_active_; }
+    void set_last_active(uint64_t ms) { last_active_ = ms; }
+
 private:
     int fd_;
     int userid_;
+    uint64_t last_active_;
 
     std::array<char, RECV_BUFFER_SIZE> recv_buf_;
     int recv_len_;
