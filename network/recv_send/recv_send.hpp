@@ -4,6 +4,10 @@
 
 class Connection;
 
+// 返回约定:
+//   >0 成功 n 字节; 0 EOF/无可发; -1 致命错误
+//   -2 无数据可读(EAGAIN / TLS WANT_READ)
+//   -3 需等待另一方向事件(TLS WANT_WRITE / WANT_READ), 调用方应重挂 EPOLLIN|EPOLLOUT
 class recv_send
 {
 public:

@@ -69,6 +69,17 @@ TaskResult on_login(const Task& task, const protocol::user::LoginRequest& req) {
             }
         }
 
+        std::vector<db::chat::OfflineGroupItem> goffline;
+        if (db::chat::offline_group_summary(*g, info.user_id(), last_offline_ts, goffline) ==
+            protocol::user::ERR_SUCCESS) {
+            for (const auto& it : goffline) {
+                std::string notice = "群聊 [" + it.group_name + "] 离线期间有 " +
+                                     std::to_string(it.count) + " 条新消息";
+                result.pushes.push_back(make_system_notify(info.user_id(), notice));
+            }
+        }
+
+
         // 系统通知: 向所有好友推送"该用户已上线" (自身除外, 自加好友不通知自己)
         std::vector<uint32_t> friends;
         if (db::user::friend_ids(*g, info.user_id(), friends) == protocol::user::ERR_SUCCESS) {

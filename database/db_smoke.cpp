@@ -215,6 +215,20 @@ int main() {
               (history.empty() || history[0].content() != "hello group"),
           "1:1 history does not leak group message");
 
+    // ---- 群离线摘要: alice 所在群收到 bob 的 1 条群消息 ----
+    std::vector<db::chat::OfflineGroupItem> goffline;
+    r = db::chat::offline_group_summary(db, alice_id, 0, goffline);
+    check(r == protocol::user::ERR_SUCCESS && goffline.size() == 1 &&
+              goffline[0].group_id == gid &&
+              goffline[0].group_name == "SmokeGroup" && goffline[0].count == 1,
+          "offline_group_summary alice sees 1 group msg");
+
+    // 自己发的群消息不计入自己
+    goffline.clear();
+    r = db::chat::offline_group_summary(db, bob_id, 0, goffline);
+    check(r == protocol::user::ERR_SUCCESS && goffline.empty(),
+          "offline_group_summary excludes self-sent msgs");
+
     // 解散
     r = db::group::dissolve_group(db, alice_id, gid);
     check(r == protocol::user::ERR_SUCCESS, "owner dissolve group");

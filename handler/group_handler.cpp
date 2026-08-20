@@ -157,7 +157,7 @@ TaskResult on_group_approve_join(const Task& task, const protocol::group::Approv
     }
     return result;
 }
-
+  
 TaskResult on_group_reject_join(const Task& task, const protocol::group::RejectJoinRequest& req) {
     protocol::group::GroupPacket resp;
     auto* r = resp.mutable_reject_join_resp();
@@ -169,7 +169,7 @@ TaskResult on_group_reject_join(const Task& task, const protocol::group::RejectJ
     if (!g) {
         r->set_err(protocol::user::ERR_SYSTEM);
         return {task.fd, detail::group_packet(resp), false};
-    }
+    } 
     std::string name;
     db::group::group_name(*g, req.group_id(), name);
     int err = db::group::reject_join(*g, task.user_id, req.group_id(), req.user_id());

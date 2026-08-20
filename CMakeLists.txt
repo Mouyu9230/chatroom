@@ -20,6 +20,8 @@ find_package(Threads REQUIRED)
 # MySQL 客户端 (database/ 模块)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MYSQL REQUIRED IMPORTED_TARGET mysqlclient)
+# TLS 通信加密 (network/ 模块的 SSL 读写)
+find_package(OpenSSL REQUIRED)
 
 # ---- 源码 ----
 # 预生成的 protobuf 文件(user/chat/group 域)
@@ -69,7 +71,7 @@ add_executable(server
     ${PROTO_PB}
 )
 target_include_directories(server PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(server PRIVATE protobuf::libprotobuf Threads::Threads PkgConfig::MYSQL)
+target_link_libraries(server PRIVATE protobuf::libprotobuf Threads::Threads PkgConfig::MYSQL OpenSSL::SSL OpenSSL::Crypto)
 
 # ---- client ----
 # 客户端仅使用 socket 与协议层, 不涉及线程池/业务处理/数据库
@@ -79,7 +81,7 @@ add_executable(client
     ${PROTO_PB}
 )
 target_include_directories(client PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(client PRIVATE protobuf::libprotobuf)
+target_link_libraries(client PRIVATE protobuf::libprotobuf OpenSSL::SSL OpenSSL::Crypto)
 
 # ---- db_smoke ----
 # MySQL 封装冒烟测试(独立可执行, 不依赖 handler)

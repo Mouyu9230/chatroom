@@ -40,5 +40,17 @@ struct OfflineItem {
 int offline_summary(Db&, uint32_t self_id, uint64_t after_ts,
                     std::vector<OfflineItem>& out);
 
+// 离线群消息摘要项: 群 + 群名 + 条数。
+struct OfflineGroupItem {
+    uint32_t group_id;
+    std::string group_name;
+    uint32_t count;
+};
+
+// 统计 ts > after_ts 期间 self 所在群(to_type=2)收到的群消息, 按群分组计数
+// (排除自己发的消息)。供用户上线时生成"离线时段群聊新消息"通知。
+int offline_group_summary(Db&, uint32_t self_id, uint64_t after_ts,
+                          std::vector<OfflineGroupItem>& out);
+
 }  // namespace chat
 }  // namespace db

@@ -8,12 +8,18 @@
 
 #include <cerrno>
 #include <chrono>
+#include <climits>
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <string>
 #include <unordered_map>
 #include <unordered_set>
 #include <utility>
+#include <vector>
+
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
 #include "../protocol/protocol.hpp"
 #include "../protocol/user/user.pb.h"
@@ -47,6 +53,78 @@ constexpr uint64_t HEARTBEAT_TIMEOUT_MS = 15000;
 // 存指针: 连接若被其它路径提前关闭, 其 fd 复用时不会误关新连接。
 static std::unordered_set<Connection*> g_pending_close;
 
+// 全局 TLS 上下文: 进程内共享, 加载同一份服务端证书。仅主线程创建。
+static SSL_CTX* g_ssl_ctx = nullptr;
+
+// 依次查找证书文件, 返回第一个可读的绝对/相对路径, 找不到返回空串。
+// 候选顺序: 显式参数 > 当前目录 > 可执行文件所在目录 > 其上一级目录。
+// (gen_cert.sh 把证书生成在仓库根; 而 server 二进制在 build/ 下, 从任意 cwd 启动都应能找到)
+static std::string find_file(const char* explicit_path, const char* base_name) {
+    std::string exe_dir;
+    {
+        char buf[PATH_MAX];
+        ssize_t n = readlink("/proc/self/exe", buf, sizeof(buf) - 1);
+        if (n > 0) {
+            buf[n] = '\0';
+            char* slash = strrchr(buf, '/');
+            if (slash != nullptr) {
+                *slash = '\0';
+                exe_dir = buf;
+            }
+        }
+    }
+
+    std::vector<std::string> candidates;
+    if (explicit_path != nullptr && explicit_path[0] != '\0') {
+        candidates.push_back(explicit_path);
+    }
+    candidates.push_back(base_name);                      // 当前工作目录
+    if (!exe_dir.empty()) {
+        candidates.push_back(exe_dir + "/" + base_name);            // 可执行文件目录
+        candidates.push_back(exe_dir + "/../" + base_name);         // 上一级(仓库根)
+    }
+    for (const auto& p : candidates) {
+        if (access(p.c_str(), R_OK) == 0) {
+            return p;
+        }
+    }
+    return std::string();
+}
+
+// 初始化服务端 TLS 上下文并加载证书/私钥(自动定位证书路径)
+static int init_tls(const char* cert_arg, const char* key_arg) {
+    std::string cert = find_file(cert_arg, "server.crt");
+    std::string key  = find_file(key_arg, "server.key");
+    if (cert.empty() || key.empty()) {
+        fprintf(stderr, "[error] TLS cert/key not found (cert=%s key=%s).\n"
+                        "  Tried: cwd, <exe_dir>, <exe_dir>/..\n"
+                        "  Generate them first: ./gen_cert.sh   (produces server.crt/server.key)\n",
+                cert_arg, key_arg);
+        return -1;
+    }
+
+    g_ssl_ctx = SSL_CTX_new(TLS_server_method());
+    if (g_ssl_ctx == nullptr) {
+        fprintf(stderr, "[error] SSL_CTX_new failed\n");
+        return -1;
+    }
+    SSL_CTX_set_min_proto_version(g_ssl_ctx, TLS1_2_VERSION);
+    // 禁掉 TLS1.2 重协商: 避免 SSL_read 期间需要反向写、SSL_write 期间需要反向读的复杂路径
+    SSL_CTX_set_options(g_ssl_ctx, SSL_OP_NO_RENEGOTIATION);
+    if (SSL_CTX_use_certificate_chain_file(g_ssl_ctx, cert.c_str()) != 1) {
+        fprintf(stderr, "[error] load certificate failed: %s\n", cert.c_str());
+        ERR_print_errors_fp(stderr);
+        return -1;
+    }
+    if (SSL_CTX_use_PrivateKey_file(g_ssl_ctx, key.c_str(), SSL_FILETYPE_PEM) != 1) {
+        fprintf(stderr, "[error] load private key failed: %s\n", key.c_str());
+        ERR_print_errors_fp(stderr);
+        return -1;
+    }
+    fprintf(stdout, "[init] tls ready (cert=%s key=%s)\n", cert.c_str(), key.c_str());
+    return 0;
+}
+
 uint64_t now_ms() {
     return static_cast<uint64_t>(std::chrono::duration_cast<std::chrono::milliseconds>(
         std::chrono::system_clock::now().time_since_epoch()).count());
@@ -74,6 +152,10 @@ int main(int argc,char* argv[]){
     int port=2100;
     if(argc>1)port=std::atoi(argv[1]);
     if(argc>2)ip=argv[2];
+    const char* cert_file = "server.crt";
+    const char* key_file  = "server.key";
+    if(argc>3)cert_file=argv[3];
+    if(argc>4)key_file=argv[4];
 
     connection_init();
     fprintf(stdout,"[init] connection pool init successfully\n");
@@ -100,6 +182,15 @@ int main(int argc,char* argv[]){
     }
     fprintf(stdout, "[init] mysql pool ready (host=%s:%u db=%s pool=%zu)\n",
             db_cfg.host.c_str(), db_cfg.port, db_cfg.database.c_str(), db_cfg.pool_size);
+
+    // ---- 初始化 TLS(全连接加密) ----
+    // init_tls 内部会自动定位证书(见 find_file), 成功时打印实际加载路径
+    if (init_tls(cert_file, key_file) != 0) {
+        fprintf(stderr, "[error] TLS init failed (cert=%s key=%s).\n"
+                        "  Generate a self-signed cert first: ./gen_cert.sh\n",
+                cert_file, key_file);
+        return 1;
+    }
 
     network::Socket listen_sock;
 
@@ -209,7 +300,7 @@ int main(int argc,char* argv[]){
             const struct epoll_event& ev=epoll_main.events()[i];
             const int ev_data_fd=ev.data.fd;
 
-            if(ev_data_fd==listen_sock.fd()){//新连接
+            if(ev_data_fd==listen_sock.fd()){//新连接 
                 if(ev.events&EPOLLIN){
                     while(true){
                         //避免 Socket::accept()对 EAGAIN 也调 perror
@@ -231,9 +322,21 @@ int main(int argc,char* argv[]){
                         }
                         if (Connection* cnew = connection_get(connfd)) {
                             cnew->set_last_active(now_ms());
+
+                            // 创建 TLS 会话并进入握手态(握手在事件循环里非阻塞完成)
+                            SSL* ssl = SSL_new(g_ssl_ctx);
+                            if (ssl == nullptr) {
+                                fprintf(stderr, "[warn] SSL_new failed for fd=%d\n", connfd);
+                                connection_remove(connfd);
+                                continue;
+                            }
+                            SSL_set_fd(ssl, connfd);
+                            SSL_set_accept_state(ssl);
+                            cnew->set_ssl(ssl);
+                            cnew->set_tls_state(TlsState::HANDSHAKE);
                         }
                         epoll_main.add(connfd, EPOLLIN);
-                        fprintf(stdout, "[accept] fd=%d\n", connfd);
+                        fprintf(stdout, "[accept] fd=%d (tls handshake pending)\n", connfd);
                     }
 
 
@@ -242,13 +345,62 @@ int main(int argc,char* argv[]){
 
 
             }
+            // 处理一个已激活(握手完成)连接的可读事件: 收包 → 提交线程池。
+            // 抽成 lambda 以便"握手完成但 SSL 内部已缓冲明文"也能复用同一路径。
+            // 返回 false 表示连接已被关闭(调用方应 continue, 不要再碰 conn)。
+            auto process_readable = [&](int cfd) -> bool {
+                Connection* c = connection_get(cfd);
+                if (c == nullptr) return false;
+
+                int ret = rs_tool.Recv(*c);
+                if (ret == 0 || ret == -1) {
+                    // ret == 0  → 对端关闭 (EOF / close_notify)
+                    // ret == -1 → 接收错误
+                    clear_user_binding(cfd);
+                    epoll_main.del(cfd);
+                    connection_remove(cfd);
+                    fprintf(stdout, "[close] fd=%d (recv=%d)\n", cfd, ret);
+                    return false;
+                }
+                if (ret > 0) {
+                    c->set_last_active(now_ms());   // 收到包: 更新活性时间戳
+                }
+                if (ret == -3) {
+                    // TLS 需向外刷数据(罕见): 挂上写事件, 让 SSL 内部输出落盘
+                    epoll_main.mod(cfd, EPOLLIN | EPOLLOUT);
+                    return true;
+                }
+                // ret > 0  读到数据; ret == -2 为 EAGAIN/WANT_READ(无数据可读), 忽略继续
+
+                // 从接收缓冲区中取出所有完整数据包
+                while (rs_tool.HasCompletePacket(*c)) {
+                    // 读取包头以获取 body 长度
+                    auto* hdr = reinterpret_cast<protocol::packet_header*>(c->recv_buffer());
+                    std::size_t total_len = sizeof(protocol::packet_header) + hdr->body_len;
+
+                    Task task;
+                    task.fd  = cfd;
+                    task.user_id = c->user_id();
+                    task.data.resize(total_len);
+
+                    std::size_t packet_len = 0;
+                    int fetch_ret = rs_tool.FetchPacket(*c, task.data.data(), packet_len);
+                    if (fetch_ret == 0 && packet_len > 0) {
+                        pool.submit(std::move(task));
+                    } else {
+                        break;//提取失败等待更多数据
+                    }
+                }
+                return true;
+            };
+
             //数据连接
             Connection* conn = connection_get(ev.data.fd);
             if (conn == nullptr) {
                 continue;   // 竞态：已在另一个事件处理中被清理
             }
 
-            // 异常 / 挂断
+            // 异常 / 挂断(握手阶段同样适用)
             if (ev.events & (EPOLLERR | EPOLLHUP)) {
                 clear_user_binding(ev.data.fd);
                 epoll_main.del(ev.data.fd);
@@ -257,47 +409,51 @@ int main(int argc,char* argv[]){
                 continue;
             }
 
-            // 可读
-            if (ev.events & EPOLLIN) {
-                int ret = rs_tool.Recv(*conn);
-                if (ret == 0 || ret == -1) {
-                    // ret == 0  → 对端关闭 (EOF)
-                    // ret == -1 → 接收错误
-                    clear_user_binding(ev_data_fd);
-                    epoll_main.del(ev_data_fd);
-                    connection_remove(ev_data_fd);
-                    fprintf(stdout, "[close] fd=%d (recv=%d)\n", ev_data_fd, ret);
+            // ---- TLS 握手阶段: 非阻塞, 在 EPOLLIN/EPOLLOUT 之间推进 ----
+            if (conn->tls_state() == TlsState::HANDSHAKE) {
+                int r = SSL_accept(conn->ssl());
+                if (r == 1) {
+                    conn->set_tls_state(TlsState::ACTIVE);
+                    fprintf(stdout, "[tls] fd=%d handshake done (%s)\n",
+                            ev_data_fd, SSL_get_version(conn->ssl()));
+                    // 握手完成时可能已伴随应用数据(或被 SSL 内部缓冲): 有数据就一并处理
+                    bool has_data = (ev.events & EPOLLIN) || SSL_pending(conn->ssl()) > 0;
+                    if (has_data) {
+                        process_readable(ev_data_fd);
+                    }
                     continue;
                 }
-                if (ret > 0) {
-                    conn->set_last_active(now_ms());   // 收到包: 更新活性时间戳
+                int err = SSL_get_error(conn->ssl(), r);
+                if (err == SSL_ERROR_WANT_READ) {
+                    epoll_main.mod(ev_data_fd, EPOLLIN);
+                    continue;
                 }
-                // ret > 0  读到数据; ret == -2 为 EAGAIN(无数据可读), 忽略继续
+                if (err == SSL_ERROR_WANT_WRITE) {
+                    epoll_main.mod(ev_data_fd, EPOLLOUT);
+                    continue;
+                }
+                // 握手失败(协议错误/超时): 直接关闭, 防恶意连接占用资源
+                clear_user_binding(ev_data_fd);
+                epoll_main.del(ev_data_fd);
+                connection_remove(ev_data_fd);
+                fprintf(stdout, "[close] fd=%d (tls handshake fail err=%d)\n", ev_data_fd, err);
+                continue;
+            }
 
-
-                // 从接收缓冲区中取出所 有完整数据包
-                while (rs_tool.HasCompletePacket(*conn)) {
-                    // 读取包头以获取 body 长度
-                    auto* hdr = reinterpret_cast<protocol::packet_header*>(conn->recv_buffer());
-                    std::size_t total_len = sizeof(protocol::packet_header) + hdr->body_len;
-
-                    Task task;
-                    task.fd  = ev_data_fd;
-                    task.user_id = conn->user_id();
-                    task. data.resize(total_len);
-
-                    std::size_t packet_len = 0; 
-                    int fetch_ret = rs_tool.FetchPacket(*conn, task.data.data(), packet_len);
-                    if (fetch_ret == 0 && packet_len > 0) {
-                        pool.submit(std::move(task));
-                    } else { 
-                        break;//提取失败等待更多数据
-                    }
+            // 可读
+            if (ev.events & EPOLLIN) {
+                if (!process_readable(ev_data_fd)) {
+                    continue;   // 连接已关闭
                 }
             }
             //可写
             if (ev.events & EPOLLOUT) {
                 int ret = rs_tool.Send(*conn);
+                if (ret == -3) {
+                    // TLS 需读数据(罕见): 不关闭, 重挂读写事件
+                    epoll_main.mod(ev_data_fd, EPOLLIN | EPOLLOUT);
+                    continue;
+                }
                 if (ret < 0) {
                     clear_user_binding(ev_data_fd);
                     epoll_main.del(ev_data_fd);
@@ -305,7 +461,7 @@ int main(int argc,char* argv[]){
                     fprintf(stdout, "[close] fd=%d (send error)\n", ev_data_fd);
                     continue;
                 }
-    
+
                 // 发送缓冲区已空 关闭写监听，避免 epoll 空转
                 if (conn->send_length() == 0) {
                     epoll_main.mod(ev_data_fd, EPOLLIN);
@@ -362,6 +518,11 @@ int main(int argc,char* argv[]){
     fprintf(stdout, "[shutdown] closing all connections...\n");
     for (int i = 0; i < MAX_CONN; ++i) {
         connection_remove(i);
+    }
+
+    if (g_ssl_ctx != nullptr) {
+        SSL_CTX_free(g_ssl_ctx);
+        g_ssl_ctx = nullptr;
     }
 
     fprintf(stdout, "[shutdown] server stopped gracefully.\n");

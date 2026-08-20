@@ -4,14 +4,24 @@
 #include <cstddef>
 #include <cstdint>
 
+#include <openssl/ssl.h>   // SSL*
+
 const int RECV_BUFFER_SIZE = 8192;
 const int SEND_BUFFER_SIZE = 8192;
+
+/// TLS 连接状态: 非阻塞握手下, 连接必须先完成握手才能收发业务包
+enum class TlsState : uint8_t {
+    HANDSHAKE = 0,   // accept 后、握手完成前
+    ACTIVE    = 1,   // 握手完成, 可正常收发
+};
 
 /// 单个连接的数据与缓冲区
 class Connection {
 public:
     explicit Connection(int fd);
-    ~Connection() = default;
+    // RAII: 析构负责 SSL_free + close(fd), 并置 -1 防 double-close。
+    // 释放/关闭不再由调用方手动做, 统一交给析构(见 connection_remove)。
+    ~Connection();
 
     Connection(const Connection&) = delete;
     Connection& operator=(const Connection&) = delete;
@@ -19,6 +29,12 @@ public:
 
 
     int fd() const { return fd_; }
+
+    SSL* ssl() const { return ssl_; }
+    void set_ssl(SSL* ssl) { ssl_ = ssl; }
+
+    TlsState tls_state() const { return tls_state_; }
+    void set_tls_state(TlsState s) { tls_state_ = s; }
 
     int user_id() const { return userid_; }
     void set_user_id(int uid) { userid_ = uid; }
@@ -37,6 +53,8 @@ public:
 
 private:
     int fd_;
+    SSL* ssl_;                // TLS 会话对象(每个连接一个); 未启用 TLS 时为 nullptr
+    TlsState tls_state_;      // TLS 握手状态
     int userid_;
     uint64_t last_active_;
 

@@ -7,6 +7,12 @@
 #include <cstring>
 #include <cerrno>
 
+#include <openssl/err.h>
+
+// 返回值约定(与既有语义兼容):
+//   >0  读/写成功 n 字节; 0 EOF(读)或无可发数据(写); -1 致命错误
+//   -2  无数据可读(EAGAIN / TLS WANT_READ)
+//   -3  本次操作需要等待另一方向事件(TLS WANT_WRITE / WANT_READ), 需重挂事件
 int recv_send::Recv(Connection& conn) {//读数据到接收缓冲区
     char* buf     = conn.recv_buffer();
     int   buf_len = conn.recv_length();
@@ -17,21 +23,45 @@ int recv_send::Recv(Connection& conn) {//读数据到接收缓冲区
         return -1;
     }
 
-    ssize_t n = read(conn.fd(), buf + buf_len, cap - buf_len);
+    SSL* ssl = conn.ssl();
+    if (ssl == nullptr) {
+        // 非 TLS 路径
+        ssize_t n = read(conn.fd(), buf + buf_len, cap - buf_len);
+        if (n > 0) {
+            conn.set_recv_length(buf_len + n);
+            return (int)n;
+        }
+        if (n == 0) {
+            // 连接关闭 (EOF)
+            return 0;
+        }
+        // n < 0
+        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            // 非阻塞下无数据可读: 正常, 不是错误也不该关闭 (与 EOF 的 0 区分)
+            return -2;
+        }
+        return -1;
+    }
+
+    // TLS 路径: SSL_read 解密后的明文直接写入接收缓冲区, 上层 framing 逻辑不变
+    int n = SSL_read(ssl, buf + buf_len, cap - buf_len);
     if (n > 0) {
         conn.set_recv_length(buf_len + n);
         return n;
     }
-    if (n == 0) {
-        // 连接关闭 (EOF)
-        return 0;
+    switch (SSL_get_error(ssl, n)) {
+        case SSL_ERROR_WANT_READ:
+            return -2;                              // 暂无解密数据, 等待可读
+        case SSL_ERROR_WANT_WRITE:
+            return -3;                              // TLS 需向外刷数据(罕见), 等可写
+        case SSL_ERROR_ZERO_RETURN:
+            return 0;                               // close_notify / EOF
+        case SSL_ERROR_SYSCALL:
+            if (errno == EAGAIN || errno == EWOULDBLOCK) return -2;
+            return -1;
+        default:
+            return -1;                              // 协议错误
     }
-    // n < 0
-    if (errno == EAGAIN || errno == EWOULDBLOCK) {
-        // 非阻塞下无数据可读: 正常, 不是错误也不该关闭 (与 EOF 的 0 区分)
-        return -2;
-    }
-    return -1;
 }
 
 int recv_send::Send(Connection& conn) {//从发送缓冲区发送数据
@@ -42,25 +72,49 @@ int recv_send::Send(Connection& conn) {//从发送缓冲区发送数据
         return 0;   // 无数据可发
     }
 
-    ssize_t n = write(conn.fd(), buf, buf_len);
+    SSL* ssl = conn.ssl();
+    if (ssl == nullptr) {
+        // 非 TLS 路径
+        ssize_t n = write(conn.fd(), buf, buf_len);
+        if (n > 0) {
+            // 已发送 n 字节，将剩余数据移到缓冲区头部
+            int remaining = buf_len - (int)n;
+            if (remaining > 0) {
+                memmove(buf, buf + n, remaining);
+            }
+            conn.set_send_length(remaining);
+        } else if (n == 0) {
+            // 连接关闭
+            return 0;
+        } else {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                return 0;   // 非阻塞下发送缓冲区满，稍后重试
+            }
+            return -1;
+        }
+        return (int)n;
+    }
+
+    // TLS 路径
+    int n = SSL_write(ssl, buf, buf_len);
     if (n > 0) {
-        // 已发送 n 字节，将剩余数据移到缓冲区头部
+        // SSL_write 成功即明文已被加密写入底层 socket(未开 PARTIAL_WRITE 时 n==buf_len)
         int remaining = buf_len - n;
-        if (remaining > 0 && n > 0) {
+        if (remaining > 0) {
             memmove(buf, buf + n, remaining);
         }
         conn.set_send_length(remaining);
-    } else if (n == 0) {
-        // 连接关闭
-        return 0;
-    } else {
-        if (errno == EAGAIN || errno == EWOULDBLOCK) {
-            return 0;   // 非阻塞下发送缓冲区满，稍后重试
-        }
-        return -1;
+        return n;
     }
-
-    return n;
+    switch (SSL_get_error(ssl, n)) {
+        case SSL_ERROR_WANT_WRITE:
+            // 明文仍保留在 SSL 内部待刷: 绝不能移动 send_buffer, 等下次 EPOLLOUT 重试
+            return 0;
+        case SSL_ERROR_WANT_READ:
+            return -3;                              // TLS 需读数据(罕见), 等可读
+        default:
+            return -1;
+    }
 }
 //校验数据包合法性
 bool recv_send::HasCompletePacket(Connection& conn) {//！！未处理丢包（后续加序列号）残缺问题（ 魔数检验处返回错误）

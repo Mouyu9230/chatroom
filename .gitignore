@@ -1,2 +1,5 @@
 /build/
 /.cache/
+# 自签名 TLS 证书(由 gen_cert.sh 生成, 不入库)
+/server.crt
+/server.key

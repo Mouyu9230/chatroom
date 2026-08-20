@@ -101,5 +101,32 @@ int offline_summary(Db& db, uint32_t self_id, uint64_t after_ts,
     return protocol::user::ERR_SUCCESS;
 }
 
+int offline_group_summary(Db& db, uint32_t self_id, uint64_t after_ts,
+                          std::vector<OfflineGroupItem>& out) {
+    // 只统计 self 所在群(to_type=2, 经 group_members 过滤)收到的群消息,
+    // 排除自己发的; 群名取自 group_info。
+    std::string sql =
+        "SELECT m.to_id, g.name, COUNT(*) AS cnt"
+        " FROM messages m"
+        " JOIN group_members gm ON gm.group_id = m.to_id AND gm.user_id=" +
+            std::to_string(self_id) +
+        " JOIN group_info g ON g.group_id = m.to_id"
+        " WHERE m.to_type=" + std::to_string(protocol::chat::TARGET_TYPE_GROUP) +
+        " AND m.from_id<>" + std::to_string(self_id) +
+        " AND m.ts>" + std::to_string(after_ts) +
+        " GROUP BY m.to_id, g.name"
+        " ORDER BY cnt DESC";
+    if (!db.query(sql, [&](const std::vector<std::string>& row) {
+            auto& it = out.emplace_back();
+            it.group_id = static_cast<uint32_t>(std::strtoul(row[0].c_str(), nullptr, 10));
+            it.group_name = row[1];
+            it.count = static_cast<uint32_t>(std::strtoul(row[2].c_str(), nullptr, 10));
+            return true;
+        })) {
+        return protocol::user::ERR_SYSTEM;
+    }
+    return protocol::user::ERR_SUCCESS;
+}
+
 }  // namespace chat
 }  // namespace db

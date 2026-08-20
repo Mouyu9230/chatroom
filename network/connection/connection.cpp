@@ -11,6 +11,8 @@
 
 Connection::Connection(int fd)
     : fd_(fd)
+    , ssl_(nullptr)
+    , tls_state_(TlsState::HANDSHAKE)
     , userid_(0)
     , last_active_(0)
     , recv_buf_()
@@ -18,6 +20,18 @@ Connection::Connection(int fd)
     , send_buf_()
     , send_len_(0)
 {
+}
+
+Connection::~Connection() {
+    // RAII: 统一在这里释放资源。ssl_ 先 free, 再关 fd; 各自置空/-1 防重复释放。
+    if (ssl_ != nullptr) {
+        SSL_free(ssl_);
+        ssl_ = nullptr;
+    }
+    if (fd_ >= 0) {
+        close(fd_);
+        fd_ = -1;
+    }
 }
 
 
@@ -59,11 +73,7 @@ void connection_remove(int fd) {
         return;
     }
 
-    // 清理连接持有的fd
-    if (conn->fd() >= 0) {
-        close(conn->fd());
-    }
-
+    // 资源(SSL + fd)统一由 Connection 析构释放, 此处只负责删除对象并清池
     delete conn;
     conn_pool[fd] = NULL;
 }

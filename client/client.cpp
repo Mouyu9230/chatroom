@@ -3,8 +3,12 @@
 #include "../network/socket/socket.hpp"
 #include "../protocol/group/group.pb.h"
 
+#include <poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+
+#include <openssl/err.h>
+#include <openssl/ssl.h>
 
 #include <cerrno>
 #include <chrono>
@@ -15,6 +19,14 @@
 #include <mutex>
 #include <queue>
 #include <thread>
+
+// ------------------------------------------------------------
+//  TLS 全局状态(客户端单连接, 全局即可)
+//    SSL 对象不支持多线程并发调用(即使方向不同), 因此所有 SSL 读写都必须持锁,
+//    且等待期间不能持锁 —— 握手完成后连接转非阻塞, 由 poll 等待事件。
+// ------------------------------------------------------------
+SSL* g_ssl = nullptr;
+std::mutex g_ssl_mtx;
 
 // ============================================================
 //  客户端实现
@@ -29,16 +41,63 @@
 namespace client {
 namespace {
 
+// 等待 socket 上指定事件(锁外调用, 不阻塞其它方向的 SSL 操作)
+static bool wait_io(int fd, short events) {
+    struct pollfd p;
+    p.fd = fd;
+    p.events = events;
+    p.revents = 0;
+    for (;;) {
+        int r = ::poll(&p, 1, -1);
+        if (r > 0) return true;
+        if (r < 0 && errno == EINTR) continue;
+        return false;   // poll 出错
+    }
+}
+
 // 阻塞读满 n 字节, 成功返回 true
 bool recv_exact(int fd, char* buf, size_t n) {
     size_t got = 0;
     while (got < n) {
+        if (g_ssl != nullptr) {
+            int r;
+            {
+                std::lock_guard<std::mutex> lk(g_ssl_mtx);
+                r = SSL_read(g_ssl, buf + got, (int)(n - got));
+            }
+            if (r > 0) {
+                got += static_cast<size_t>(r);
+                continue;
+            }
+            switch (SSL_get_error(g_ssl, r)) {
+                case SSL_ERROR_WANT_READ:
+                    if (!wait_io(fd, POLLIN)) return false;
+                    continue;
+                case SSL_ERROR_WANT_WRITE:      // 罕见(重协商), 等可写后重试
+                    if (!wait_io(fd, POLLOUT)) return false;
+                    continue;
+                case SSL_ERROR_ZERO_RETURN:
+                    return false;               // 对端关闭(close_notify)
+                case SSL_ERROR_SYSCALL:
+                    if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                        if (!wait_io(fd, POLLIN)) return false;
+                        continue;
+                    }
+                    return false;
+                default:
+                    return false;
+            }
+        }
+
         ssize_t r = ::recv(fd, buf + got, n - got, 0);
         if (r > 0) {
             got += static_cast<size_t>(r);
         } else if (r == 0) {
             return false;  // 对端关闭
         } else if (errno == EINTR) {
+            continue;
+        } else if (errno == EAGAIN || errno == EWOULDBLOCK) {
+            if (!wait_io(fd, POLLIN)) return false;
             continue;
         } else {
             return false;
@@ -51,13 +110,36 @@ bool recv_exact(int fd, char* buf, size_t n) {
 bool send_exact(int fd, const char* data, size_t n) {
     size_t sent = 0;
     while (sent < n) {
+        if (g_ssl != nullptr) {
+            int r;
+            {
+                std::lock_guard<std::mutex> lk(g_ssl_mtx);
+                r = SSL_write(g_ssl, data + sent, (int)(n - sent));
+            }
+            if (r > 0) {
+                sent += static_cast<size_t>(r);
+                continue;
+            }
+            switch (SSL_get_error(g_ssl, r)) {
+                case SSL_ERROR_WANT_WRITE:
+                    // 明文保留在 SSL 内部待刷: sent 未前移, 以相同参数重试
+                    if (!wait_io(fd, POLLOUT)) return false;
+                    continue;
+                case SSL_ERROR_WANT_READ:       // 罕见(重协商), 等可读后重试
+                    if (!wait_io(fd, POLLIN)) return false;
+                    continue;
+                default:
+                    return false;
+            }
+        }
+
         ssize_t r = ::send(fd, data + sent, n - sent, MSG_NOSIGNAL);
         if (r > 0) {
             sent += static_cast<size_t>(r);
         } else if (r < 0 && errno == EINTR) {
             continue;
         } else if (r < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
-            usleep(1000);  // 发送缓冲区暂满, 稍后重试
+            if (!wait_io(fd, POLLOUT)) return false;
             continue;
         } else {
             return false;
@@ -445,7 +527,36 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     int fd = sock.fd();
-    fprintf(stdout, "[client] connected to %s:%d (fd=%d)\n", ip, port, fd);
+
+    // ---- TLS 握手(握手期间保持阻塞; 完成后转非阻塞 + 互斥锁并发读写) ----
+    SSL_CTX* ctx = SSL_CTX_new(TLS_client_method());
+    if (ctx == nullptr) {
+        fprintf(stderr, "[client] SSL_CTX_new failed\n");
+        return 1;
+    }
+    SSL_CTX_set_min_proto_version(ctx, TLS1_2_VERSION);
+    SSL_CTX_set_options(ctx, SSL_OP_NO_RENEGOTIATION);
+    // 开发环境跳过自签名证书校验。生产环境应改为 SSL_VERIFY_PEER +
+    // SSL_CTX_load_verify_locations(ca) 并检查 SSL_get_verify_result。
+    SSL_CTX_set_verify(ctx, SSL_VERIFY_NONE, nullptr);
+    SSL* ssl = SSL_new(ctx);
+    if (ssl == nullptr) {
+        fprintf(stderr, "[client] SSL_new failed\n");
+        SSL_CTX_free(ctx);
+        return 1;
+    }
+    SSL_set_fd(ssl, fd);
+    if (SSL_connect(ssl) != 1) {
+        fprintf(stderr, "[client] TLS handshake failed: ");
+        ERR_print_errors_fp(stderr);
+        SSL_free(ssl);
+        SSL_CTX_free(ctx);
+        return 1;
+    }
+    g_ssl = ssl;
+    sock.set_nonblock();   // 此后由 poll 驱动等待, 避免持锁阻塞其它方向的 SSL 操作
+    fprintf(stdout, "[client] connected to %s:%d (fd=%d) tls=%s\n",
+            ip, port, fd, SSL_get_version(ssl));
     print_help();
 
     client::start_reader(fd);   // 后台线程常驻收包, 推送实时打印
@@ -909,6 +1020,14 @@ int main(int argc, char* argv[]) {
         send_logout(fd, g_uid);
     }
 
+    if (g_ssl != nullptr) {
+        SSL_free(g_ssl);
+        g_ssl = nullptr;
+    }
+    if (ctx != nullptr) {
+        SSL_CTX_free(ctx);
+        ctx = nullptr;
+    }
     ::close(fd);
     fprintf(stdout, "\n[client] closed.\n");
     return 0;
