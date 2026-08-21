@@ -601,7 +601,7 @@ static std::string client_file_dir() {
 }
 // 下载目录: 与上传源目录(cli_send)分开。若共用同一目录, fget 会把同名的上传源文件误当成
 // 断点续传残片(直接跳过下载), 且下载会覆盖上传源 —— 单机双客户端测试必然踩中。
-// (仿 ftp_server 的 test_cli/ 上传 + cli_retr_* 下载分离思路) 形如 <项目根>/client/files/cli_recv。
+// (仿 FTP 的 STOR/RETR 上传/下载目录分离思路) 形如 <项目根>/client/files/cli_recv。
 static std::string client_recv_dir() {
     static const std::string d = project_root() + "/client/files/cli_recv";
     return d;
