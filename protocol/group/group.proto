@@ -105,6 +105,16 @@ message RemoveMemberResponse {
   uint32       user_id  = 3;
 }
 
+// 主动退群: 成员把自己移出群。群主不能退(须解散群, ERR_GROUP_OWNER)。
+message GroupQuitRequest {
+  uint32 group_id = 1;
+}
+
+message GroupQuitResponse {
+  user.ErrCode err      = 1;
+  uint32       group_id = 2;
+}
+
 // 待审批加群申请列表 (仅群主/管理员)
 message GroupPendingListRequest {
   uint32 group_id = 1;
@@ -177,5 +187,7 @@ message GroupPacket {
     GroupMemberListResponse  member_list_resp      = 18;
     GroupListRequest         group_list_req        = 19;
     GroupListResponse        group_list_resp       = 20;
+    GroupQuitRequest         quit_req              = 21;
+    GroupQuitResponse        quit_resp             = 22;
   }
 }

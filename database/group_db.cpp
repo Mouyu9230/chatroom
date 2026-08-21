@@ -215,6 +215,18 @@ int remove_member(Db& db, uint32_t acting_uid, uint32_t group_id, uint32_t targe
     return protocol::user::ERR_SUCCESS;
 }
 
+int quit_group(Db& db, uint32_t user_id, uint32_t group_id) {
+    if (!group_exists(db, group_id)) return protocol::user::ERR_GROUP_NOT_FOUND;
+    int role = member_role(db, group_id, user_id);
+    if (role == 0) return protocol::user::ERR_NOT_GROUP_MEMBER;
+    if (role == protocol::group::GROUP_ROLE_OWNER) return protocol::user::ERR_GROUP_OWNER;
+
+    std::string del = "DELETE FROM group_members WHERE group_id=" +
+                      std::to_string(group_id) + " AND user_id=" + std::to_string(user_id);
+    if (!db.execute(del)) return protocol::user::ERR_SYSTEM;
+    return protocol::user::ERR_SUCCESS;
+}
+
 int member_list(Db& db, uint32_t acting_uid, uint32_t group_id,
                 std::vector<protocol::group::GroupMemberItem>& members) {
     if (!group_exists(db, group_id)) return protocol::user::ERR_GROUP_NOT_FOUND;

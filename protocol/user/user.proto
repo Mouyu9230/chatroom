@@ -37,6 +37,7 @@ enum ErrCode {
   ERR_NOT_GROUP_ADMIN  = 13;  // 需群主/管理员权限
   ERR_NOT_GROUP_OWNER  = 14;  // 需群主权限
   ERR_ALREADY_IN_GROUP = 15;  // 已是群成员或申请已提交
+  ERR_GROUP_OWNER      = 16;  // 群主不能退群(须解散群)
   // 未来: ERR_OFFLINE / ERR_TOO_FREQUENT / ERR_FORBIDDEN ...
 }
 

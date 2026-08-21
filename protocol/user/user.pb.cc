@@ -733,7 +733,7 @@ const char descriptor_table_protodef_user_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "H\000\022;\n\017friend_list_req\030\027 \001(\0132 .protocol.u"
   "ser.FriendListRequestH\000\022=\n\020friend_list_r"
   "esp\030\030 \001(\0132!.protocol.user.FriendListResp"
-  "onseH\000B\006\n\004body*\346\002\n\007ErrCode\022\017\n\013ERR_SUCCES"
+  "onseH\000B\006\n\004body*\373\002\n\007ErrCode\022\017\n\013ERR_SUCCES"
   "S\020\000\022\016\n\nERR_SYSTEM\020\001\022\025\n\021ERR_INVALID_PARAM"
   "\020\002\022\024\n\020ERR_INVALID_USER\020\003\022\023\n\017ERR_USER_EXI"
   "STS\020\004\022\025\n\021ERR_NOT_LOGGED_IN\020\005\022\014\n\010ERR_FULL"
@@ -742,11 +742,12 @@ const char descriptor_table_protodef_user_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "ENDING\020\n\022\027\n\023ERR_GROUP_NOT_FOUND\020\013\022\030\n\024ERR"
   "_NOT_GROUP_MEMBER\020\014\022\027\n\023ERR_NOT_GROUP_ADM"
   "IN\020\r\022\027\n\023ERR_NOT_GROUP_OWNER\020\016\022\030\n\024ERR_ALR"
-  "EADY_IN_GROUP\020\017b\006proto3"
+  "EADY_IN_GROUP\020\017\022\023\n\017ERR_GROUP_OWNER\020\020b\006pr"
+  "oto3"
   ;
 static ::_pbi::once_flag descriptor_table_user_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_user_2eproto = {
-    false, false, 3223, descriptor_table_protodef_user_2eproto,
+    false, false, 3244, descriptor_table_protodef_user_2eproto,
     "user.proto",
     &descriptor_table_user_2eproto_once, nullptr, 0, 26,
     schemas, file_default_instances, TableStruct_user_2eproto::offsets,
@@ -783,6 +784,7 @@ bool ErrCode_IsValid(int value) {
     case 13:
     case 14:
     case 15:
+    case 16:
       return true;
     default:
       return false;

@@ -176,12 +176,13 @@ enum ErrCode : int {
   ERR_NOT_GROUP_ADMIN = 13,
   ERR_NOT_GROUP_OWNER = 14,
   ERR_ALREADY_IN_GROUP = 15,
+  ERR_GROUP_OWNER = 16,
   ErrCode_INT_MIN_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::min(),
   ErrCode_INT_MAX_SENTINEL_DO_NOT_USE_ = std::numeric_limits<int32_t>::max()
 };
 bool ErrCode_IsValid(int value);
 constexpr ErrCode ErrCode_MIN = ERR_SUCCESS;
-constexpr ErrCode ErrCode_MAX = ERR_ALREADY_IN_GROUP;
+constexpr ErrCode ErrCode_MAX = ERR_GROUP_OWNER;
 constexpr int ErrCode_ARRAYSIZE = ErrCode_MAX + 1;
 
 const ::PROTOBUF_NAMESPACE_ID::EnumDescriptor* ErrCode_descriptor();

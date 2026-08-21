@@ -221,6 +221,7 @@ protocol::group::GroupPacket::BodyCase expected_group_resp_case(const protocol::
         case P::kPendingListReq:  return P::kPendingListResp;
         case P::kMemberListReq:   return P::kMemberListResp;
         case P::kGroupListReq:    return P::kGroupListResp;
+        case P::kQuitReq:         return P::kQuitResp;
         default:                  return P::BODY_NOT_SET;
     }
 }
@@ -528,6 +529,7 @@ const char* err_name(int e) {
         case 13: return "NOT_GROUP_ADMIN";
         case 14: return "NOT_GROUP_OWNER";
         case 15: return "ALREADY_IN_GROUP";
+        case 16: return "GROUP_OWNER";
         default: return "?";
     }
 }
@@ -555,6 +557,7 @@ void print_help() {
             "  gmembers <group_id>\n"
             "  gremove  <group_id> <user_id>\n"
             "  gpromote <group_id> <user_id>\n"
+            "  gquit    <group_id>             leave a group (owner must dissolve instead)\n"
             "  glist\n"
             "  gchat    <group_id> <text>\n"
             "  ghistory <group_id> [limit]\n"
@@ -825,7 +828,7 @@ int main(int argc, char* argv[]) {
         // 服务端主动断开连接(如被顶号/被踢): 及时提示并退出, 不必等用户输入才发现。
         // (被顶号时, 服务端会先推 SystemNotify, 再由 reader 线程置 g_closed)
         if (client::g_closed) {
-            fprintf(stdout, "\n[client] connection closed by server (可能被顶号强制下线)\n");
+            fprintf(stdout, "\n[client] connection closed by server\n");
             break;
         }
         struct pollfd pfd;
@@ -1218,6 +1221,21 @@ int main(int argc, char* argv[]) {
                 fprintf(stdout, "[gpromote] err=%s(%d) group_id=%u user_id=%u\n",
                         err_name(rr.err()), static_cast<int>(rr.err()),
                         rr.group_id(), rr.user_id());
+            }
+
+        } else if (strcmp(cmd, "gquit") == 0) {
+            uint32_t gid = 0;
+            if (sscanf(line, "%*s %u", &gid) != 1) {
+                fprintf(stderr, "usage: gquit <group_id>\n");
+                continue;
+            }
+            protocol::group::GroupPacket req;
+            req.mutable_quit_req()->set_group_id(gid);
+            protocol::group::GroupPacket resp;
+            if (client::group_request(fd, req, resp)) {
+                const auto& rr = resp.quit_resp();
+                fprintf(stdout, "[gquit] err=%s(%d) group_id=%u\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()), rr.group_id());
             }
 
         } else if (strcmp(cmd, "glist") == 0) {

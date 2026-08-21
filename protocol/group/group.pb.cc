@@ -220,6 +220,33 @@ struct RemoveMemberResponseDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 RemoveMemberResponseDefaultTypeInternal _RemoveMemberResponse_default_instance_;
+PROTOBUF_CONSTEXPR GroupQuitRequest::GroupQuitRequest(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.group_id_)*/0u
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct GroupQuitRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR GroupQuitRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~GroupQuitRequestDefaultTypeInternal() {}
+  union {
+    GroupQuitRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GroupQuitRequestDefaultTypeInternal _GroupQuitRequest_default_instance_;
+PROTOBUF_CONSTEXPR GroupQuitResponse::GroupQuitResponse(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.err_)*/0
+  , /*decltype(_impl_.group_id_)*/0u
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct GroupQuitResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR GroupQuitResponseDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~GroupQuitResponseDefaultTypeInternal() {}
+  union {
+    GroupQuitResponse _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GroupQuitResponseDefaultTypeInternal _GroupQuitResponse_default_instance_;
 PROTOBUF_CONSTEXPR GroupPendingListRequest::GroupPendingListRequest(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.group_id_)*/0u
@@ -361,7 +388,7 @@ struct GroupPacketDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 GroupPacketDefaultTypeInternal _GroupPacket_default_instance_;
 }  // namespace group
 }  // namespace protocol
-static ::_pb::Metadata file_level_metadata_group_2eproto[24];
+static ::_pb::Metadata file_level_metadata_group_2eproto[26];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_group_2eproto[1];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_group_2eproto = nullptr;
 
@@ -481,6 +508,21 @@ const uint32_t TableStruct_group_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pr
   PROTOBUF_FIELD_OFFSET(::protocol::group::RemoveMemberResponse, _impl_.group_id_),
   PROTOBUF_FIELD_OFFSET(::protocol::group::RemoveMemberResponse, _impl_.user_id_),
   ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protocol::group::GroupQuitRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protocol::group::GroupQuitRequest, _impl_.group_id_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protocol::group::GroupQuitResponse, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protocol::group::GroupQuitResponse, _impl_.err_),
+  PROTOBUF_FIELD_OFFSET(::protocol::group::GroupQuitResponse, _impl_.group_id_),
+  ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::protocol::group::GroupPendingListRequest, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
@@ -578,6 +620,8 @@ const uint32_t TableStruct_group_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pr
   ::_pbi::kInvalidFieldOffsetTag,
   ::_pbi::kInvalidFieldOffsetTag,
   ::_pbi::kInvalidFieldOffsetTag,
+  ::_pbi::kInvalidFieldOffsetTag,
+  ::_pbi::kInvalidFieldOffsetTag,
   PROTOBUF_FIELD_OFFSET(::protocol::group::GroupPacket, _impl_.body_),
 };
 static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
@@ -595,16 +639,18 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 88, -1, -1, sizeof(::protocol::group::RejectJoinResponse)},
   { 97, -1, -1, sizeof(::protocol::group::RemoveMemberRequest)},
   { 105, -1, -1, sizeof(::protocol::group::RemoveMemberResponse)},
-  { 114, -1, -1, sizeof(::protocol::group::GroupPendingListRequest)},
-  { 121, -1, -1, sizeof(::protocol::group::GroupPendingItem)},
-  { 131, -1, -1, sizeof(::protocol::group::GroupPendingListResponse)},
-  { 139, -1, -1, sizeof(::protocol::group::GroupMemberListRequest)},
-  { 146, -1, -1, sizeof(::protocol::group::GroupMemberItem)},
-  { 155, -1, -1, sizeof(::protocol::group::GroupMemberListResponse)},
-  { 163, -1, -1, sizeof(::protocol::group::GroupListRequest)},
-  { 169, -1, -1, sizeof(::protocol::group::GroupListItem)},
-  { 178, -1, -1, sizeof(::protocol::group::GroupListResponse)},
-  { 186, -1, -1, sizeof(::protocol::group::GroupPacket)},
+  { 114, -1, -1, sizeof(::protocol::group::GroupQuitRequest)},
+  { 121, -1, -1, sizeof(::protocol::group::GroupQuitResponse)},
+  { 129, -1, -1, sizeof(::protocol::group::GroupPendingListRequest)},
+  { 136, -1, -1, sizeof(::protocol::group::GroupPendingItem)},
+  { 146, -1, -1, sizeof(::protocol::group::GroupPendingListResponse)},
+  { 154, -1, -1, sizeof(::protocol::group::GroupMemberListRequest)},
+  { 161, -1, -1, sizeof(::protocol::group::GroupMemberItem)},
+  { 170, -1, -1, sizeof(::protocol::group::GroupMemberListResponse)},
+  { 178, -1, -1, sizeof(::protocol::group::GroupListRequest)},
+  { 184, -1, -1, sizeof(::protocol::group::GroupListItem)},
+  { 193, -1, -1, sizeof(::protocol::group::GroupListResponse)},
+  { 201, -1, -1, sizeof(::protocol::group::GroupPacket)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -622,6 +668,8 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::protocol::group::_RejectJoinResponse_default_instance_._instance,
   &::protocol::group::_RemoveMemberRequest_default_instance_._instance,
   &::protocol::group::_RemoveMemberResponse_default_instance_._instance,
+  &::protocol::group::_GroupQuitRequest_default_instance_._instance,
+  &::protocol::group::_GroupQuitResponse_default_instance_._instance,
   &::protocol::group::_GroupPendingListRequest_default_instance_._instance,
   &::protocol::group::_GroupPendingItem_default_instance_._instance,
   &::protocol::group::_GroupPendingListResponse_default_instance_._instance,
@@ -660,69 +708,75 @@ const char descriptor_table_protodef_group_2eproto[] PROTOBUF_SECTION_VARIABLE(p
   "equest\022\020\n\010group_id\030\001 \001(\r\022\017\n\007user_id\030\002 \001("
   "\r\"^\n\024RemoveMemberResponse\022#\n\003err\030\001 \001(\0162\026"
   ".protocol.user.ErrCode\022\020\n\010group_id\030\002 \001(\r"
-  "\022\017\n\007user_id\030\003 \001(\r\"+\n\027GroupPendingListReq"
-  "uest\022\020\n\010group_id\030\001 \001(\r\"Q\n\020GroupPendingIt"
-  "em\022\017\n\007user_id\030\001 \001(\r\022\020\n\010nickname\030\002 \001(\t\022\016\n"
-  "\006remark\030\003 \001(\t\022\n\n\002ts\030\004 \001(\004\"p\n\030GroupPendin"
-  "gListResponse\022#\n\003err\030\001 \001(\0162\026.protocol.us"
-  "er.ErrCode\022/\n\005items\030\002 \003(\0132 .protocol.gro"
-  "up.GroupPendingItem\"*\n\026GroupMemberListRe"
-  "quest\022\020\n\010group_id\030\001 \001(\r\"]\n\017GroupMemberIt"
-  "em\022\017\n\007user_id\030\001 \001(\r\022\020\n\010nickname\030\002 \001(\t\022\'\n"
-  "\004role\030\003 \001(\0162\031.protocol.group.GroupRole\"p"
-  "\n\027GroupMemberListResponse\022#\n\003err\030\001 \001(\0162\026"
-  ".protocol.user.ErrCode\0220\n\007members\030\002 \003(\0132"
-  "\037.protocol.group.GroupMemberItem\"\022\n\020Grou"
-  "pListRequest\"X\n\rGroupListItem\022\020\n\010group_i"
-  "d\030\001 \001(\r\022\014\n\004name\030\002 \001(\t\022\'\n\004role\030\003 \001(\0162\031.pr"
-  "otocol.group.GroupRole\"g\n\021GroupListRespo"
-  "nse\022#\n\003err\030\001 \001(\0162\026.protocol.user.ErrCode"
-  "\022-\n\006groups\030\002 \003(\0132\035.protocol.group.GroupL"
-  "istItem\"\221\n\n\013GroupPacket\0228\n\ncreate_req\030\001 "
-  "\001(\0132\".protocol.group.CreateGroupRequestH"
-  "\000\022:\n\013create_resp\030\002 \001(\0132#.protocol.group."
-  "CreateGroupResponseH\000\022<\n\014dissolve_req\030\003 "
-  "\001(\0132$.protocol.group.DissolveGroupReques"
-  "tH\000\022>\n\rdissolve_resp\030\004 \001(\0132%.protocol.gr"
-  "oup.DissolveGroupResponseH\000\022@\n\021promote_a"
-  "dmin_req\030\005 \001(\0132#.protocol.group.PromoteA"
-  "dminRequestH\000\022B\n\022promote_admin_resp\030\006 \001("
-  "\0132$.protocol.group.PromoteAdminResponseH"
-  "\000\0224\n\010join_req\030\007 \001(\0132 .protocol.group.Joi"
-  "nGroupRequestH\000\0226\n\tjoin_resp\030\010 \001(\0132!.pro"
-  "tocol.group.JoinGroupResponseH\000\022>\n\020appro"
-  "ve_join_req\030\t \001(\0132\".protocol.group.Appro"
-  "veJoinRequestH\000\022@\n\021approve_join_resp\030\n \001"
-  "(\0132#.protocol.group.ApproveJoinResponseH"
-  "\000\022<\n\017reject_join_req\030\013 \001(\0132!.protocol.gr"
-  "oup.RejectJoinRequestH\000\022>\n\020reject_join_r"
-  "esp\030\014 \001(\0132\".protocol.group.RejectJoinRes"
-  "ponseH\000\022@\n\021remove_member_req\030\r \001(\0132#.pro"
-  "tocol.group.RemoveMemberRequestH\000\022B\n\022rem"
-  "ove_member_resp\030\016 \001(\0132$.protocol.group.R"
-  "emoveMemberResponseH\000\022C\n\020pending_list_re"
-  "q\030\017 \001(\0132\'.protocol.group.GroupPendingLis"
-  "tRequestH\000\022E\n\021pending_list_resp\030\020 \001(\0132(."
-  "protocol.group.GroupPendingListResponseH"
-  "\000\022A\n\017member_list_req\030\021 \001(\0132&.protocol.gr"
-  "oup.GroupMemberListRequestH\000\022C\n\020member_l"
-  "ist_resp\030\022 \001(\0132\'.protocol.group.GroupMem"
-  "berListResponseH\000\022:\n\016group_list_req\030\023 \001("
-  "\0132 .protocol.group.GroupListRequestH\000\022<\n"
-  "\017group_list_resp\030\024 \001(\0132!.protocol.group."
-  "GroupListResponseH\000B\006\n\004body*j\n\tGroupRole"
-  "\022\032\n\026GROUP_ROLE_UNSPECIFIED\020\000\022\024\n\020GROUP_RO"
-  "LE_OWNER\020\001\022\024\n\020GROUP_ROLE_ADMIN\020\002\022\025\n\021GROU"
-  "P_ROLE_MEMBER\020\003b\006proto3"
+  "\022\017\n\007user_id\030\003 \001(\r\"$\n\020GroupQuitRequest\022\020\n"
+  "\010group_id\030\001 \001(\r\"J\n\021GroupQuitResponse\022#\n\003"
+  "err\030\001 \001(\0162\026.protocol.user.ErrCode\022\020\n\010gro"
+  "up_id\030\002 \001(\r\"+\n\027GroupPendingListRequest\022\020"
+  "\n\010group_id\030\001 \001(\r\"Q\n\020GroupPendingItem\022\017\n\007"
+  "user_id\030\001 \001(\r\022\020\n\010nickname\030\002 \001(\t\022\016\n\006remar"
+  "k\030\003 \001(\t\022\n\n\002ts\030\004 \001(\004\"p\n\030GroupPendingListR"
+  "esponse\022#\n\003err\030\001 \001(\0162\026.protocol.user.Err"
+  "Code\022/\n\005items\030\002 \003(\0132 .protocol.group.Gro"
+  "upPendingItem\"*\n\026GroupMemberListRequest\022"
+  "\020\n\010group_id\030\001 \001(\r\"]\n\017GroupMemberItem\022\017\n\007"
+  "user_id\030\001 \001(\r\022\020\n\010nickname\030\002 \001(\t\022\'\n\004role\030"
+  "\003 \001(\0162\031.protocol.group.GroupRole\"p\n\027Grou"
+  "pMemberListResponse\022#\n\003err\030\001 \001(\0162\026.proto"
+  "col.user.ErrCode\0220\n\007members\030\002 \003(\0132\037.prot"
+  "ocol.group.GroupMemberItem\"\022\n\020GroupListR"
+  "equest\"X\n\rGroupListItem\022\020\n\010group_id\030\001 \001("
+  "\r\022\014\n\004name\030\002 \001(\t\022\'\n\004role\030\003 \001(\0162\031.protocol"
+  ".group.GroupRole\"g\n\021GroupListResponse\022#\n"
+  "\003err\030\001 \001(\0162\026.protocol.user.ErrCode\022-\n\006gr"
+  "oups\030\002 \003(\0132\035.protocol.group.GroupListIte"
+  "m\"\377\n\n\013GroupPacket\0228\n\ncreate_req\030\001 \001(\0132\"."
+  "protocol.group.CreateGroupRequestH\000\022:\n\013c"
+  "reate_resp\030\002 \001(\0132#.protocol.group.Create"
+  "GroupResponseH\000\022<\n\014dissolve_req\030\003 \001(\0132$."
+  "protocol.group.DissolveGroupRequestH\000\022>\n"
+  "\rdissolve_resp\030\004 \001(\0132%.protocol.group.Di"
+  "ssolveGroupResponseH\000\022@\n\021promote_admin_r"
+  "eq\030\005 \001(\0132#.protocol.group.PromoteAdminRe"
+  "questH\000\022B\n\022promote_admin_resp\030\006 \001(\0132$.pr"
+  "otocol.group.PromoteAdminResponseH\000\0224\n\010j"
+  "oin_req\030\007 \001(\0132 .protocol.group.JoinGroup"
+  "RequestH\000\0226\n\tjoin_resp\030\010 \001(\0132!.protocol."
+  "group.JoinGroupResponseH\000\022>\n\020approve_joi"
+  "n_req\030\t \001(\0132\".protocol.group.ApproveJoin"
+  "RequestH\000\022@\n\021approve_join_resp\030\n \001(\0132#.p"
+  "rotocol.group.ApproveJoinResponseH\000\022<\n\017r"
+  "eject_join_req\030\013 \001(\0132!.protocol.group.Re"
+  "jectJoinRequestH\000\022>\n\020reject_join_resp\030\014 "
+  "\001(\0132\".protocol.group.RejectJoinResponseH"
+  "\000\022@\n\021remove_member_req\030\r \001(\0132#.protocol."
+  "group.RemoveMemberRequestH\000\022B\n\022remove_me"
+  "mber_resp\030\016 \001(\0132$.protocol.group.RemoveM"
+  "emberResponseH\000\022C\n\020pending_list_req\030\017 \001("
+  "\0132\'.protocol.group.GroupPendingListReque"
+  "stH\000\022E\n\021pending_list_resp\030\020 \001(\0132(.protoc"
+  "ol.group.GroupPendingListResponseH\000\022A\n\017m"
+  "ember_list_req\030\021 \001(\0132&.protocol.group.Gr"
+  "oupMemberListRequestH\000\022C\n\020member_list_re"
+  "sp\030\022 \001(\0132\'.protocol.group.GroupMemberLis"
+  "tResponseH\000\022:\n\016group_list_req\030\023 \001(\0132 .pr"
+  "otocol.group.GroupListRequestH\000\022<\n\017group"
+  "_list_resp\030\024 \001(\0132!.protocol.group.GroupL"
+  "istResponseH\000\0224\n\010quit_req\030\025 \001(\0132 .protoc"
+  "ol.group.GroupQuitRequestH\000\0226\n\tquit_resp"
+  "\030\026 \001(\0132!.protocol.group.GroupQuitRespons"
+  "eH\000B\006\n\004body*j\n\tGroupRole\022\032\n\026GROUP_ROLE_U"
+  "NSPECIFIED\020\000\022\024\n\020GROUP_ROLE_OWNER\020\001\022\024\n\020GR"
+  "OUP_ROLE_ADMIN\020\002\022\025\n\021GROUP_ROLE_MEMBER\020\003b"
+  "\006proto3"
   ;
 static const ::_pbi::DescriptorTable* const descriptor_table_group_2eproto_deps[1] = {
   &::descriptor_table_user_2eproto,
 };
 static ::_pbi::once_flag descriptor_table_group_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_group_2eproto = {
-    false, false, 3143, descriptor_table_protodef_group_2eproto,
+    false, false, 3367, descriptor_table_protodef_group_2eproto,
     "group.proto",
-    &descriptor_table_group_2eproto_once, descriptor_table_group_2eproto_deps, 1, 24,
+    &descriptor_table_group_2eproto_once, descriptor_table_group_2eproto_deps, 1, 26,
     schemas, file_default_instances, TableStruct_group_2eproto::offsets,
     file_level_metadata_group_2eproto, file_level_enum_descriptors_group_2eproto,
     file_level_service_descriptors_group_2eproto,
@@ -3803,6 +3857,398 @@ void RemoveMemberResponse::InternalSwap(RemoveMemberResponse* other) {
 
 // ===================================================================
 
+class GroupQuitRequest::_Internal {
+ public:
+};
+
+GroupQuitRequest::GroupQuitRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protocol.group.GroupQuitRequest)
+}
+GroupQuitRequest::GroupQuitRequest(const GroupQuitRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  GroupQuitRequest* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.group_id_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_.group_id_ = from._impl_.group_id_;
+  // @@protoc_insertion_point(copy_constructor:protocol.group.GroupQuitRequest)
+}
+
+inline void GroupQuitRequest::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.group_id_){0u}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+GroupQuitRequest::~GroupQuitRequest() {
+  // @@protoc_insertion_point(destructor:protocol.group.GroupQuitRequest)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void GroupQuitRequest::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void GroupQuitRequest::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void GroupQuitRequest::Clear() {
+// @@protoc_insertion_point(message_clear_start:protocol.group.GroupQuitRequest)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.group_id_ = 0u;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* GroupQuitRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // uint32 group_id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.group_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* GroupQuitRequest::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protocol.group.GroupQuitRequest)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint32 group_id = 1;
+  if (this->_internal_group_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_group_id(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protocol.group.GroupQuitRequest)
+  return target;
+}
+
+size_t GroupQuitRequest::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protocol.group.GroupQuitRequest)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // uint32 group_id = 1;
+  if (this->_internal_group_id() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_group_id());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData GroupQuitRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    GroupQuitRequest::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GroupQuitRequest::GetClassData() const { return &_class_data_; }
+
+
+void GroupQuitRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<GroupQuitRequest*>(&to_msg);
+  auto& from = static_cast<const GroupQuitRequest&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protocol.group.GroupQuitRequest)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_group_id() != 0) {
+    _this->_internal_set_group_id(from._internal_group_id());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void GroupQuitRequest::CopyFrom(const GroupQuitRequest& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protocol.group.GroupQuitRequest)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool GroupQuitRequest::IsInitialized() const {
+  return true;
+}
+
+void GroupQuitRequest::InternalSwap(GroupQuitRequest* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  swap(_impl_.group_id_, other->_impl_.group_id_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata GroupQuitRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_group_2eproto_getter, &descriptor_table_group_2eproto_once,
+      file_level_metadata_group_2eproto[14]);
+}
+
+// ===================================================================
+
+class GroupQuitResponse::_Internal {
+ public:
+};
+
+GroupQuitResponse::GroupQuitResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protocol.group.GroupQuitResponse)
+}
+GroupQuitResponse::GroupQuitResponse(const GroupQuitResponse& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  GroupQuitResponse* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.err_){}
+    , decltype(_impl_.group_id_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  ::memcpy(&_impl_.err_, &from._impl_.err_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.group_id_) -
+    reinterpret_cast<char*>(&_impl_.err_)) + sizeof(_impl_.group_id_));
+  // @@protoc_insertion_point(copy_constructor:protocol.group.GroupQuitResponse)
+}
+
+inline void GroupQuitResponse::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.err_){0}
+    , decltype(_impl_.group_id_){0u}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+GroupQuitResponse::~GroupQuitResponse() {
+  // @@protoc_insertion_point(destructor:protocol.group.GroupQuitResponse)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void GroupQuitResponse::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+}
+
+void GroupQuitResponse::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void GroupQuitResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:protocol.group.GroupQuitResponse)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  ::memset(&_impl_.err_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.group_id_) -
+      reinterpret_cast<char*>(&_impl_.err_)) + sizeof(_impl_.group_id_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* GroupQuitResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .protocol.user.ErrCode err = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_err(static_cast<::protocol::user::ErrCode>(val));
+        } else
+          goto handle_unusual;
+        continue;
+      // uint32 group_id = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
+          _impl_.group_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* GroupQuitResponse::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protocol.group.GroupQuitResponse)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .protocol.user.ErrCode err = 1;
+  if (this->_internal_err() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      1, this->_internal_err(), target);
+  }
+
+  // uint32 group_id = 2;
+  if (this->_internal_group_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(2, this->_internal_group_id(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protocol.group.GroupQuitResponse)
+  return target;
+}
+
+size_t GroupQuitResponse::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protocol.group.GroupQuitResponse)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // .protocol.user.ErrCode err = 1;
+  if (this->_internal_err() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_err());
+  }
+
+  // uint32 group_id = 2;
+  if (this->_internal_group_id() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_group_id());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData GroupQuitResponse::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    GroupQuitResponse::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GroupQuitResponse::GetClassData() const { return &_class_data_; }
+
+
+void GroupQuitResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<GroupQuitResponse*>(&to_msg);
+  auto& from = static_cast<const GroupQuitResponse&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protocol.group.GroupQuitResponse)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (from._internal_err() != 0) {
+    _this->_internal_set_err(from._internal_err());
+  }
+  if (from._internal_group_id() != 0) {
+    _this->_internal_set_group_id(from._internal_group_id());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void GroupQuitResponse::CopyFrom(const GroupQuitResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protocol.group.GroupQuitResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool GroupQuitResponse::IsInitialized() const {
+  return true;
+}
+
+void GroupQuitResponse::InternalSwap(GroupQuitResponse* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(GroupQuitResponse, _impl_.group_id_)
+      + sizeof(GroupQuitResponse::_impl_.group_id_)
+      - PROTOBUF_FIELD_OFFSET(GroupQuitResponse, _impl_.err_)>(
+          reinterpret_cast<char*>(&_impl_.err_),
+          reinterpret_cast<char*>(&other->_impl_.err_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata GroupQuitResponse::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_group_2eproto_getter, &descriptor_table_group_2eproto_once,
+      file_level_metadata_group_2eproto[15]);
+}
+
+// ===================================================================
+
 class GroupPendingListRequest::_Internal {
  public:
 };
@@ -3976,7 +4422,7 @@ void GroupPendingListRequest::InternalSwap(GroupPendingListRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GroupPendingListRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_group_2eproto_getter, &descriptor_table_group_2eproto_once,
-      file_level_metadata_group_2eproto[14]);
+      file_level_metadata_group_2eproto[16]);
 }
 
 // ===================================================================
@@ -4289,7 +4735,7 @@ void GroupPendingItem::InternalSwap(GroupPendingItem* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GroupPendingItem::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_group_2eproto_getter, &descriptor_table_group_2eproto_once,
-      file_level_metadata_group_2eproto[15]);
+      file_level_metadata_group_2eproto[17]);
 }
 
 // ===================================================================
@@ -4504,7 +4950,7 @@ void GroupPendingListResponse::InternalSwap(GroupPendingListResponse* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GroupPendingListResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_group_2eproto_getter, &descriptor_table_group_2eproto_once,
-      file_level_metadata_group_2eproto[16]);
+      file_level_metadata_group_2eproto[18]);
 }
 
 // ===================================================================
@@ -4682,7 +5128,7 @@ void GroupMemberListRequest::InternalSwap(GroupMemberListRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GroupMemberListRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_group_2eproto_getter, &descriptor_table_group_2eproto_once,
-      file_level_metadata_group_2eproto[17]);
+      file_level_metadata_group_2eproto[19]);
 }
 
 // ===================================================================
@@ -4948,7 +5394,7 @@ void GroupMemberItem::InternalSwap(GroupMemberItem* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GroupMemberItem::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_group_2eproto_getter, &descriptor_table_group_2eproto_once,
-      file_level_metadata_group_2eproto[18]);
+      file_level_metadata_group_2eproto[20]);
 }
 
 // ===================================================================
@@ -5163,7 +5609,7 @@ void GroupMemberListResponse::InternalSwap(GroupMemberListResponse* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GroupMemberListResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_group_2eproto_getter, &descriptor_table_group_2eproto_once,
-      file_level_metadata_group_2eproto[19]);
+      file_level_metadata_group_2eproto[21]);
 }
 
 // ===================================================================
@@ -5203,7 +5649,7 @@ const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GroupListRequest::GetClassData
 ::PROTOBUF_NAMESPACE_ID::Metadata GroupListRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_group_2eproto_getter, &descriptor_table_group_2eproto_once,
-      file_level_metadata_group_2eproto[20]);
+      file_level_metadata_group_2eproto[22]);
 }
 
 // ===================================================================
@@ -5469,7 +5915,7 @@ void GroupListItem::InternalSwap(GroupListItem* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GroupListItem::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_group_2eproto_getter, &descriptor_table_group_2eproto_once,
-      file_level_metadata_group_2eproto[21]);
+      file_level_metadata_group_2eproto[23]);
 }
 
 // ===================================================================
@@ -5684,7 +6130,7 @@ void GroupListResponse::InternalSwap(GroupListResponse* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GroupListResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_group_2eproto_getter, &descriptor_table_group_2eproto_once,
-      file_level_metadata_group_2eproto[22]);
+      file_level_metadata_group_2eproto[24]);
 }
 
 // ===================================================================
@@ -5711,6 +6157,8 @@ class GroupPacket::_Internal {
   static const ::protocol::group::GroupMemberListResponse& member_list_resp(const GroupPacket* msg);
   static const ::protocol::group::GroupListRequest& group_list_req(const GroupPacket* msg);
   static const ::protocol::group::GroupListResponse& group_list_resp(const GroupPacket* msg);
+  static const ::protocol::group::GroupQuitRequest& quit_req(const GroupPacket* msg);
+  static const ::protocol::group::GroupQuitResponse& quit_resp(const GroupPacket* msg);
 };
 
 const ::protocol::group::CreateGroupRequest&
@@ -5792,6 +6240,14 @@ GroupPacket::_Internal::group_list_req(const GroupPacket* msg) {
 const ::protocol::group::GroupListResponse&
 GroupPacket::_Internal::group_list_resp(const GroupPacket* msg) {
   return *msg->_impl_.body_.group_list_resp_;
+}
+const ::protocol::group::GroupQuitRequest&
+GroupPacket::_Internal::quit_req(const GroupPacket* msg) {
+  return *msg->_impl_.body_.quit_req_;
+}
+const ::protocol::group::GroupQuitResponse&
+GroupPacket::_Internal::quit_resp(const GroupPacket* msg) {
+  return *msg->_impl_.body_.quit_resp_;
 }
 void GroupPacket::set_allocated_create_req(::protocol::group::CreateGroupRequest* create_req) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
@@ -6093,6 +6549,36 @@ void GroupPacket::set_allocated_group_list_resp(::protocol::group::GroupListResp
   }
   // @@protoc_insertion_point(field_set_allocated:protocol.group.GroupPacket.group_list_resp)
 }
+void GroupPacket::set_allocated_quit_req(::protocol::group::GroupQuitRequest* quit_req) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_body();
+  if (quit_req) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(quit_req);
+    if (message_arena != submessage_arena) {
+      quit_req = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, quit_req, submessage_arena);
+    }
+    set_has_quit_req();
+    _impl_.body_.quit_req_ = quit_req;
+  }
+  // @@protoc_insertion_point(field_set_allocated:protocol.group.GroupPacket.quit_req)
+}
+void GroupPacket::set_allocated_quit_resp(::protocol::group::GroupQuitResponse* quit_resp) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_body();
+  if (quit_resp) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(quit_resp);
+    if (message_arena != submessage_arena) {
+      quit_resp = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, quit_resp, submessage_arena);
+    }
+    set_has_quit_resp();
+    _impl_.body_.quit_resp_ = quit_resp;
+  }
+  // @@protoc_insertion_point(field_set_allocated:protocol.group.GroupPacket.quit_resp)
+}
 GroupPacket::GroupPacket(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
@@ -6208,6 +6694,16 @@ GroupPacket::GroupPacket(const GroupPacket& from)
     case kGroupListResp: {
       _this->_internal_mutable_group_list_resp()->::protocol::group::GroupListResponse::MergeFrom(
           from._internal_group_list_resp());
+      break;
+    }
+    case kQuitReq: {
+      _this->_internal_mutable_quit_req()->::protocol::group::GroupQuitRequest::MergeFrom(
+          from._internal_quit_req());
+      break;
+    }
+    case kQuitResp: {
+      _this->_internal_mutable_quit_resp()->::protocol::group::GroupQuitResponse::MergeFrom(
+          from._internal_quit_resp());
       break;
     }
     case BODY_NOT_SET: {
@@ -6369,6 +6865,18 @@ void GroupPacket::clear_body() {
     case kGroupListResp: {
       if (GetArenaForAllocation() == nullptr) {
         delete _impl_.body_.group_list_resp_;
+      }
+      break;
+    }
+    case kQuitReq: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete _impl_.body_.quit_req_;
+      }
+      break;
+    }
+    case kQuitResp: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete _impl_.body_.quit_resp_;
       }
       break;
     }
@@ -6556,6 +7064,22 @@ const char* GroupPacket::_InternalParse(const char* ptr, ::_pbi::ParseContext* c
         } else
           goto handle_unusual;
         continue;
+      // .protocol.group.GroupQuitRequest quit_req = 21;
+      case 21:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 170)) {
+          ptr = ctx->ParseMessage(_internal_mutable_quit_req(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .protocol.group.GroupQuitResponse quit_resp = 22;
+      case 22:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 178)) {
+          ptr = ctx->ParseMessage(_internal_mutable_quit_resp(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
       default:
         goto handle_unusual;
     }  // switch
@@ -6725,6 +7249,20 @@ uint8_t* GroupPacket::_InternalSerialize(
         _Internal::group_list_resp(this).GetCachedSize(), target, stream);
   }
 
+  // .protocol.group.GroupQuitRequest quit_req = 21;
+  if (_internal_has_quit_req()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(21, _Internal::quit_req(this),
+        _Internal::quit_req(this).GetCachedSize(), target, stream);
+  }
+
+  // .protocol.group.GroupQuitResponse quit_resp = 22;
+  if (_internal_has_quit_resp()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(22, _Internal::quit_resp(this),
+        _Internal::quit_resp(this).GetCachedSize(), target, stream);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
@@ -6882,6 +7420,20 @@ size_t GroupPacket::ByteSizeLong() const {
           *_impl_.body_.group_list_resp_);
       break;
     }
+    // .protocol.group.GroupQuitRequest quit_req = 21;
+    case kQuitReq: {
+      total_size += 2 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *_impl_.body_.quit_req_);
+      break;
+    }
+    // .protocol.group.GroupQuitResponse quit_resp = 22;
+    case kQuitResp: {
+      total_size += 2 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *_impl_.body_.quit_resp_);
+      break;
+    }
     case BODY_NOT_SET: {
       break;
     }
@@ -7005,6 +7557,16 @@ void GroupPacket::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PR
           from._internal_group_list_resp());
       break;
     }
+    case kQuitReq: {
+      _this->_internal_mutable_quit_req()->::protocol::group::GroupQuitRequest::MergeFrom(
+          from._internal_quit_req());
+      break;
+    }
+    case kQuitResp: {
+      _this->_internal_mutable_quit_resp()->::protocol::group::GroupQuitResponse::MergeFrom(
+          from._internal_quit_resp());
+      break;
+    }
     case BODY_NOT_SET: {
       break;
     }
@@ -7033,7 +7595,7 @@ void GroupPacket::InternalSwap(GroupPacket* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata GroupPacket::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_group_2eproto_getter, &descriptor_table_group_2eproto_once,
-      file_level_metadata_group_2eproto[23]);
+      file_level_metadata_group_2eproto[25]);
 }
 
 // @@protoc_insertion_point(namespace_scope)
@@ -7095,6 +7657,14 @@ Arena::CreateMaybeMessage< ::protocol::group::RemoveMemberRequest >(Arena* arena
 template<> PROTOBUF_NOINLINE ::protocol::group::RemoveMemberResponse*
 Arena::CreateMaybeMessage< ::protocol::group::RemoveMemberResponse >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protocol::group::RemoveMemberResponse >(arena);
+}
+template<> PROTOBUF_NOINLINE ::protocol::group::GroupQuitRequest*
+Arena::CreateMaybeMessage< ::protocol::group::GroupQuitRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protocol::group::GroupQuitRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::protocol::group::GroupQuitResponse*
+Arena::CreateMaybeMessage< ::protocol::group::GroupQuitResponse >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protocol::group::GroupQuitResponse >(arena);
 }
 template<> PROTOBUF_NOINLINE ::protocol::group::GroupPendingListRequest*
 Arena::CreateMaybeMessage< ::protocol::group::GroupPendingListRequest >(Arena* arena) {

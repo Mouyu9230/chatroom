@@ -209,6 +209,30 @@ TaskResult on_group_remove_member(const Task& task, const protocol::group::Remov
     return result;
 }
 
+TaskResult on_group_quit(const Task& task, const protocol::group::GroupQuitRequest& req) {
+    protocol::group::GroupPacket resp;
+    auto* r = resp.mutable_quit_resp();
+    if (task.user_id == 0) {
+        r->set_err(protocol::user::ERR_NOT_LOGGED_IN);
+        return {task.fd, detail::group_packet(resp), false};
+    }
+    DbGuard g(db_pool());
+    if (!g) {
+        r->set_err(protocol::user::ERR_SYSTEM);
+        return {task.fd, detail::group_packet(resp), false};
+    }
+    std::string name;
+    db::group::group_name(*g, req.group_id(), name);
+    int err = db::group::quit_group(*g, task.user_id, req.group_id());
+    r->set_err(static_cast<protocol::user::ErrCode>(err));
+    r->set_group_id(req.group_id());
+    TaskResult result{task.fd, detail::group_packet(resp), false};
+    if (err == protocol::user::ERR_SUCCESS) {
+        result.pushes.push_back(make_system_notify(task.user_id, "你已退出群 " + name));
+    }
+    return result;
+}
+
 TaskResult on_group_pending_list(const Task& task, const protocol::group::GroupPendingListRequest& req) {
     protocol::group::GroupPacket resp;
     auto* r = resp.mutable_pending_list_resp();
@@ -288,6 +312,8 @@ TaskResult on_group_packet(const Task& task, const char* body, size_t body_len) 
             return on_group_member_list(task, pkt.member_list_req());
         case protocol::group::GroupPacket::kGroupListReq:
             return on_group_list(task, pkt.group_list_req());
+        case protocol::group::GroupPacket::kQuitReq:
+            return on_group_quit(task, pkt.quit_req());
         default:
             fprintf(stderr, "[handler] unknown group packet case: %d\n",
                     static_cast<int>(pkt.body_case()));

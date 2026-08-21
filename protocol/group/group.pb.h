@@ -97,6 +97,12 @@ extern GroupPendingListRequestDefaultTypeInternal _GroupPendingListRequest_defau
 class GroupPendingListResponse;
 struct GroupPendingListResponseDefaultTypeInternal;
 extern GroupPendingListResponseDefaultTypeInternal _GroupPendingListResponse_default_instance_;
+class GroupQuitRequest;
+struct GroupQuitRequestDefaultTypeInternal;
+extern GroupQuitRequestDefaultTypeInternal _GroupQuitRequest_default_instance_;
+class GroupQuitResponse;
+struct GroupQuitResponseDefaultTypeInternal;
+extern GroupQuitResponseDefaultTypeInternal _GroupQuitResponse_default_instance_;
 class JoinGroupRequest;
 struct JoinGroupRequestDefaultTypeInternal;
 extern JoinGroupRequestDefaultTypeInternal _JoinGroupRequest_default_instance_;
@@ -140,6 +146,8 @@ template<> ::protocol::group::GroupPacket* Arena::CreateMaybeMessage<::protocol:
 template<> ::protocol::group::GroupPendingItem* Arena::CreateMaybeMessage<::protocol::group::GroupPendingItem>(Arena*);
 template<> ::protocol::group::GroupPendingListRequest* Arena::CreateMaybeMessage<::protocol::group::GroupPendingListRequest>(Arena*);
 template<> ::protocol::group::GroupPendingListResponse* Arena::CreateMaybeMessage<::protocol::group::GroupPendingListResponse>(Arena*);
+template<> ::protocol::group::GroupQuitRequest* Arena::CreateMaybeMessage<::protocol::group::GroupQuitRequest>(Arena*);
+template<> ::protocol::group::GroupQuitResponse* Arena::CreateMaybeMessage<::protocol::group::GroupQuitResponse>(Arena*);
 template<> ::protocol::group::JoinGroupRequest* Arena::CreateMaybeMessage<::protocol::group::JoinGroupRequest>(Arena*);
 template<> ::protocol::group::JoinGroupResponse* Arena::CreateMaybeMessage<::protocol::group::JoinGroupResponse>(Arena*);
 template<> ::protocol::group::PromoteAdminRequest* Arena::CreateMaybeMessage<::protocol::group::PromoteAdminRequest>(Arena*);
@@ -2439,6 +2447,313 @@ class RemoveMemberResponse final :
 };
 // -------------------------------------------------------------------
 
+class GroupQuitRequest final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protocol.group.GroupQuitRequest) */ {
+ public:
+  inline GroupQuitRequest() : GroupQuitRequest(nullptr) {}
+  ~GroupQuitRequest() override;
+  explicit PROTOBUF_CONSTEXPR GroupQuitRequest(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  GroupQuitRequest(const GroupQuitRequest& from);
+  GroupQuitRequest(GroupQuitRequest&& from) noexcept
+    : GroupQuitRequest() {
+    *this = ::std::move(from);
+  }
+
+  inline GroupQuitRequest& operator=(const GroupQuitRequest& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline GroupQuitRequest& operator=(GroupQuitRequest&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const GroupQuitRequest& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const GroupQuitRequest* internal_default_instance() {
+    return reinterpret_cast<const GroupQuitRequest*>(
+               &_GroupQuitRequest_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    14;
+
+  friend void swap(GroupQuitRequest& a, GroupQuitRequest& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(GroupQuitRequest* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(GroupQuitRequest* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  GroupQuitRequest* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GroupQuitRequest>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GroupQuitRequest& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const GroupQuitRequest& from) {
+    GroupQuitRequest::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GroupQuitRequest* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "protocol.group.GroupQuitRequest";
+  }
+  protected:
+  explicit GroupQuitRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kGroupIdFieldNumber = 1,
+  };
+  // uint32 group_id = 1;
+  void clear_group_id();
+  uint32_t group_id() const;
+  void set_group_id(uint32_t value);
+  private:
+  uint32_t _internal_group_id() const;
+  void _internal_set_group_id(uint32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:protocol.group.GroupQuitRequest)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    uint32_t group_id_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_group_2eproto;
+};
+// -------------------------------------------------------------------
+
+class GroupQuitResponse final :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protocol.group.GroupQuitResponse) */ {
+ public:
+  inline GroupQuitResponse() : GroupQuitResponse(nullptr) {}
+  ~GroupQuitResponse() override;
+  explicit PROTOBUF_CONSTEXPR GroupQuitResponse(::PROTOBUF_NAMESPACE_ID::internal::ConstantInitialized);
+
+  GroupQuitResponse(const GroupQuitResponse& from);
+  GroupQuitResponse(GroupQuitResponse&& from) noexcept
+    : GroupQuitResponse() {
+    *this = ::std::move(from);
+  }
+
+  inline GroupQuitResponse& operator=(const GroupQuitResponse& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline GroupQuitResponse& operator=(GroupQuitResponse&& from) noexcept {
+    if (this == &from) return *this;
+    if (GetOwningArena() == from.GetOwningArena()
+  #ifdef PROTOBUF_FORCE_COPY_IN_MOVE
+        && GetOwningArena() != nullptr
+  #endif  // !PROTOBUF_FORCE_COPY_IN_MOVE
+    ) {
+      InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return default_instance().GetMetadata().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return default_instance().GetMetadata().reflection;
+  }
+  static const GroupQuitResponse& default_instance() {
+    return *internal_default_instance();
+  }
+  static inline const GroupQuitResponse* internal_default_instance() {
+    return reinterpret_cast<const GroupQuitResponse*>(
+               &_GroupQuitResponse_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    15;
+
+  friend void swap(GroupQuitResponse& a, GroupQuitResponse& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(GroupQuitResponse* other) {
+    if (other == this) return;
+  #ifdef PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() != nullptr &&
+        GetOwningArena() == other->GetOwningArena()) {
+   #else  // PROTOBUF_FORCE_COPY_IN_SWAP
+    if (GetOwningArena() == other->GetOwningArena()) {
+  #endif  // !PROTOBUF_FORCE_COPY_IN_SWAP
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(GroupQuitResponse* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetOwningArena() == other->GetOwningArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  GroupQuitResponse* New(::PROTOBUF_NAMESPACE_ID::Arena* arena = nullptr) const final {
+    return CreateMaybeMessage<GroupQuitResponse>(arena);
+  }
+  using ::PROTOBUF_NAMESPACE_ID::Message::CopyFrom;
+  void CopyFrom(const GroupQuitResponse& from);
+  using ::PROTOBUF_NAMESPACE_ID::Message::MergeFrom;
+  void MergeFrom( const GroupQuitResponse& from) {
+    GroupQuitResponse::MergeImpl(*this, from);
+  }
+  private:
+  static void MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg);
+  public:
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  uint8_t* _InternalSerialize(
+      uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _impl_._cached_size_.Get(); }
+
+  private:
+  void SharedCtor(::PROTOBUF_NAMESPACE_ID::Arena* arena, bool is_message_owned);
+  void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(GroupQuitResponse* other);
+
+  private:
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "protocol.group.GroupQuitResponse";
+  }
+  protected:
+  explicit GroupQuitResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                       bool is_message_owned = false);
+  public:
+
+  static const ClassData _class_data_;
+  const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*GetClassData() const final;
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kErrFieldNumber = 1,
+    kGroupIdFieldNumber = 2,
+  };
+  // .protocol.user.ErrCode err = 1;
+  void clear_err();
+  ::protocol::user::ErrCode err() const;
+  void set_err(::protocol::user::ErrCode value);
+  private:
+  ::protocol::user::ErrCode _internal_err() const;
+  void _internal_set_err(::protocol::user::ErrCode value);
+  public:
+
+  // uint32 group_id = 2;
+  void clear_group_id();
+  uint32_t group_id() const;
+  void set_group_id(uint32_t value);
+  private:
+  uint32_t _internal_group_id() const;
+  void _internal_set_group_id(uint32_t value);
+  public:
+
+  // @@protoc_insertion_point(class_scope:protocol.group.GroupQuitResponse)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  struct Impl_ {
+    int err_;
+    uint32_t group_id_;
+    mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  };
+  union { Impl_ _impl_; };
+  friend struct ::TableStruct_group_2eproto;
+};
+// -------------------------------------------------------------------
+
 class GroupPendingListRequest final :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:protocol.group.GroupPendingListRequest) */ {
  public:
@@ -2487,7 +2802,7 @@ class GroupPendingListRequest final :
                &_GroupPendingListRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    14;
+    16;
 
   friend void swap(GroupPendingListRequest& a, GroupPendingListRequest& b) {
     a.Swap(&b);
@@ -2635,7 +2950,7 @@ class GroupPendingItem final :
                &_GroupPendingItem_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    15;
+    17;
 
   friend void swap(GroupPendingItem& a, GroupPendingItem& b) {
     a.Swap(&b);
@@ -2826,7 +3141,7 @@ class GroupPendingListResponse final :
                &_GroupPendingListResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    16;
+    18;
 
   friend void swap(GroupPendingListResponse& a, GroupPendingListResponse& b) {
     a.Swap(&b);
@@ -2994,7 +3309,7 @@ class GroupMemberListRequest final :
                &_GroupMemberListRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    17;
+    19;
 
   friend void swap(GroupMemberListRequest& a, GroupMemberListRequest& b) {
     a.Swap(&b);
@@ -3142,7 +3457,7 @@ class GroupMemberItem final :
                &_GroupMemberItem_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    18;
+    20;
 
   friend void swap(GroupMemberItem& a, GroupMemberItem& b) {
     a.Swap(&b);
@@ -3317,7 +3632,7 @@ class GroupMemberListResponse final :
                &_GroupMemberListResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    19;
+    21;
 
   friend void swap(GroupMemberListResponse& a, GroupMemberListResponse& b) {
     a.Swap(&b);
@@ -3484,7 +3799,7 @@ class GroupListRequest final :
                &_GroupListRequest_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    20;
+    22;
 
   friend void swap(GroupListRequest& a, GroupListRequest& b) {
     a.Swap(&b);
@@ -3603,7 +3918,7 @@ class GroupListItem final :
                &_GroupListItem_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    21;
+    23;
 
   friend void swap(GroupListItem& a, GroupListItem& b) {
     a.Swap(&b);
@@ -3778,7 +4093,7 @@ class GroupListResponse final :
                &_GroupListResponse_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    22;
+    24;
 
   friend void swap(GroupListResponse& a, GroupListResponse& b) {
     a.Swap(&b);
@@ -3962,6 +4277,8 @@ class GroupPacket final :
     kMemberListResp = 18,
     kGroupListReq = 19,
     kGroupListResp = 20,
+    kQuitReq = 21,
+    kQuitResp = 22,
     BODY_NOT_SET = 0,
   };
 
@@ -3970,7 +4287,7 @@ class GroupPacket final :
                &_GroupPacket_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    23;
+    25;
 
   friend void swap(GroupPacket& a, GroupPacket& b) {
     a.Swap(&b);
@@ -4063,6 +4380,8 @@ class GroupPacket final :
     kMemberListRespFieldNumber = 18,
     kGroupListReqFieldNumber = 19,
     kGroupListRespFieldNumber = 20,
+    kQuitReqFieldNumber = 21,
+    kQuitRespFieldNumber = 22,
   };
   // .protocol.group.CreateGroupRequest create_req = 1;
   bool has_create_req() const;
@@ -4424,6 +4743,42 @@ class GroupPacket final :
       ::protocol::group::GroupListResponse* group_list_resp);
   ::protocol::group::GroupListResponse* unsafe_arena_release_group_list_resp();
 
+  // .protocol.group.GroupQuitRequest quit_req = 21;
+  bool has_quit_req() const;
+  private:
+  bool _internal_has_quit_req() const;
+  public:
+  void clear_quit_req();
+  const ::protocol::group::GroupQuitRequest& quit_req() const;
+  PROTOBUF_NODISCARD ::protocol::group::GroupQuitRequest* release_quit_req();
+  ::protocol::group::GroupQuitRequest* mutable_quit_req();
+  void set_allocated_quit_req(::protocol::group::GroupQuitRequest* quit_req);
+  private:
+  const ::protocol::group::GroupQuitRequest& _internal_quit_req() const;
+  ::protocol::group::GroupQuitRequest* _internal_mutable_quit_req();
+  public:
+  void unsafe_arena_set_allocated_quit_req(
+      ::protocol::group::GroupQuitRequest* quit_req);
+  ::protocol::group::GroupQuitRequest* unsafe_arena_release_quit_req();
+
+  // .protocol.group.GroupQuitResponse quit_resp = 22;
+  bool has_quit_resp() const;
+  private:
+  bool _internal_has_quit_resp() const;
+  public:
+  void clear_quit_resp();
+  const ::protocol::group::GroupQuitResponse& quit_resp() const;
+  PROTOBUF_NODISCARD ::protocol::group::GroupQuitResponse* release_quit_resp();
+  ::protocol::group::GroupQuitResponse* mutable_quit_resp();
+  void set_allocated_quit_resp(::protocol::group::GroupQuitResponse* quit_resp);
+  private:
+  const ::protocol::group::GroupQuitResponse& _internal_quit_resp() const;
+  ::protocol::group::GroupQuitResponse* _internal_mutable_quit_resp();
+  public:
+  void unsafe_arena_set_allocated_quit_resp(
+      ::protocol::group::GroupQuitResponse* quit_resp);
+  ::protocol::group::GroupQuitResponse* unsafe_arena_release_quit_resp();
+
   void clear_body();
   BodyCase body_case() const;
   // @@protoc_insertion_point(class_scope:protocol.group.GroupPacket)
@@ -4449,6 +4804,8 @@ class GroupPacket final :
   void set_has_member_list_resp();
   void set_has_group_list_req();
   void set_has_group_list_resp();
+  void set_has_quit_req();
+  void set_has_quit_resp();
 
   inline bool has_body() const;
   inline void clear_has_body();
@@ -4480,6 +4837,8 @@ class GroupPacket final :
       ::protocol::group::GroupMemberListResponse* member_list_resp_;
       ::protocol::group::GroupListRequest* group_list_req_;
       ::protocol::group::GroupListResponse* group_list_resp_;
+      ::protocol::group::GroupQuitRequest* quit_req_;
+      ::protocol::group::GroupQuitResponse* quit_resp_;
     } body_;
     mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
     uint32_t _oneof_case_[1];
@@ -5209,6 +5568,74 @@ inline void RemoveMemberResponse::_internal_set_user_id(uint32_t value) {
 inline void RemoveMemberResponse::set_user_id(uint32_t value) {
   _internal_set_user_id(value);
   // @@protoc_insertion_point(field_set:protocol.group.RemoveMemberResponse.user_id)
+}
+
+// -------------------------------------------------------------------
+
+// GroupQuitRequest
+
+// uint32 group_id = 1;
+inline void GroupQuitRequest::clear_group_id() {
+  _impl_.group_id_ = 0u;
+}
+inline uint32_t GroupQuitRequest::_internal_group_id() const {
+  return _impl_.group_id_;
+}
+inline uint32_t GroupQuitRequest::group_id() const {
+  // @@protoc_insertion_point(field_get:protocol.group.GroupQuitRequest.group_id)
+  return _internal_group_id();
+}
+inline void GroupQuitRequest::_internal_set_group_id(uint32_t value) {
+  
+  _impl_.group_id_ = value;
+}
+inline void GroupQuitRequest::set_group_id(uint32_t value) {
+  _internal_set_group_id(value);
+  // @@protoc_insertion_point(field_set:protocol.group.GroupQuitRequest.group_id)
+}
+
+// -------------------------------------------------------------------
+
+// GroupQuitResponse
+
+// .protocol.user.ErrCode err = 1;
+inline void GroupQuitResponse::clear_err() {
+  _impl_.err_ = 0;
+}
+inline ::protocol::user::ErrCode GroupQuitResponse::_internal_err() const {
+  return static_cast< ::protocol::user::ErrCode >(_impl_.err_);
+}
+inline ::protocol::user::ErrCode GroupQuitResponse::err() const {
+  // @@protoc_insertion_point(field_get:protocol.group.GroupQuitResponse.err)
+  return _internal_err();
+}
+inline void GroupQuitResponse::_internal_set_err(::protocol::user::ErrCode value) {
+  
+  _impl_.err_ = value;
+}
+inline void GroupQuitResponse::set_err(::protocol::user::ErrCode value) {
+  _internal_set_err(value);
+  // @@protoc_insertion_point(field_set:protocol.group.GroupQuitResponse.err)
+}
+
+// uint32 group_id = 2;
+inline void GroupQuitResponse::clear_group_id() {
+  _impl_.group_id_ = 0u;
+}
+inline uint32_t GroupQuitResponse::_internal_group_id() const {
+  return _impl_.group_id_;
+}
+inline uint32_t GroupQuitResponse::group_id() const {
+  // @@protoc_insertion_point(field_get:protocol.group.GroupQuitResponse.group_id)
+  return _internal_group_id();
+}
+inline void GroupQuitResponse::_internal_set_group_id(uint32_t value) {
+  
+  _impl_.group_id_ = value;
+}
+inline void GroupQuitResponse::set_group_id(uint32_t value) {
+  _internal_set_group_id(value);
+  // @@protoc_insertion_point(field_set:protocol.group.GroupQuitResponse.group_id)
 }
 
 // -------------------------------------------------------------------
@@ -7271,6 +7698,154 @@ inline ::protocol::group::GroupListResponse* GroupPacket::mutable_group_list_res
   return _msg;
 }
 
+// .protocol.group.GroupQuitRequest quit_req = 21;
+inline bool GroupPacket::_internal_has_quit_req() const {
+  return body_case() == kQuitReq;
+}
+inline bool GroupPacket::has_quit_req() const {
+  return _internal_has_quit_req();
+}
+inline void GroupPacket::set_has_quit_req() {
+  _impl_._oneof_case_[0] = kQuitReq;
+}
+inline void GroupPacket::clear_quit_req() {
+  if (_internal_has_quit_req()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete _impl_.body_.quit_req_;
+    }
+    clear_has_body();
+  }
+}
+inline ::protocol::group::GroupQuitRequest* GroupPacket::release_quit_req() {
+  // @@protoc_insertion_point(field_release:protocol.group.GroupPacket.quit_req)
+  if (_internal_has_quit_req()) {
+    clear_has_body();
+    ::protocol::group::GroupQuitRequest* temp = _impl_.body_.quit_req_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    _impl_.body_.quit_req_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::protocol::group::GroupQuitRequest& GroupPacket::_internal_quit_req() const {
+  return _internal_has_quit_req()
+      ? *_impl_.body_.quit_req_
+      : reinterpret_cast< ::protocol::group::GroupQuitRequest&>(::protocol::group::_GroupQuitRequest_default_instance_);
+}
+inline const ::protocol::group::GroupQuitRequest& GroupPacket::quit_req() const {
+  // @@protoc_insertion_point(field_get:protocol.group.GroupPacket.quit_req)
+  return _internal_quit_req();
+}
+inline ::protocol::group::GroupQuitRequest* GroupPacket::unsafe_arena_release_quit_req() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:protocol.group.GroupPacket.quit_req)
+  if (_internal_has_quit_req()) {
+    clear_has_body();
+    ::protocol::group::GroupQuitRequest* temp = _impl_.body_.quit_req_;
+    _impl_.body_.quit_req_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void GroupPacket::unsafe_arena_set_allocated_quit_req(::protocol::group::GroupQuitRequest* quit_req) {
+  clear_body();
+  if (quit_req) {
+    set_has_quit_req();
+    _impl_.body_.quit_req_ = quit_req;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:protocol.group.GroupPacket.quit_req)
+}
+inline ::protocol::group::GroupQuitRequest* GroupPacket::_internal_mutable_quit_req() {
+  if (!_internal_has_quit_req()) {
+    clear_body();
+    set_has_quit_req();
+    _impl_.body_.quit_req_ = CreateMaybeMessage< ::protocol::group::GroupQuitRequest >(GetArenaForAllocation());
+  }
+  return _impl_.body_.quit_req_;
+}
+inline ::protocol::group::GroupQuitRequest* GroupPacket::mutable_quit_req() {
+  ::protocol::group::GroupQuitRequest* _msg = _internal_mutable_quit_req();
+  // @@protoc_insertion_point(field_mutable:protocol.group.GroupPacket.quit_req)
+  return _msg;
+}
+
+// .protocol.group.GroupQuitResponse quit_resp = 22;
+inline bool GroupPacket::_internal_has_quit_resp() const {
+  return body_case() == kQuitResp;
+}
+inline bool GroupPacket::has_quit_resp() const {
+  return _internal_has_quit_resp();
+}
+inline void GroupPacket::set_has_quit_resp() {
+  _impl_._oneof_case_[0] = kQuitResp;
+}
+inline void GroupPacket::clear_quit_resp() {
+  if (_internal_has_quit_resp()) {
+    if (GetArenaForAllocation() == nullptr) {
+      delete _impl_.body_.quit_resp_;
+    }
+    clear_has_body();
+  }
+}
+inline ::protocol::group::GroupQuitResponse* GroupPacket::release_quit_resp() {
+  // @@protoc_insertion_point(field_release:protocol.group.GroupPacket.quit_resp)
+  if (_internal_has_quit_resp()) {
+    clear_has_body();
+    ::protocol::group::GroupQuitResponse* temp = _impl_.body_.quit_resp_;
+    if (GetArenaForAllocation() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    _impl_.body_.quit_resp_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::protocol::group::GroupQuitResponse& GroupPacket::_internal_quit_resp() const {
+  return _internal_has_quit_resp()
+      ? *_impl_.body_.quit_resp_
+      : reinterpret_cast< ::protocol::group::GroupQuitResponse&>(::protocol::group::_GroupQuitResponse_default_instance_);
+}
+inline const ::protocol::group::GroupQuitResponse& GroupPacket::quit_resp() const {
+  // @@protoc_insertion_point(field_get:protocol.group.GroupPacket.quit_resp)
+  return _internal_quit_resp();
+}
+inline ::protocol::group::GroupQuitResponse* GroupPacket::unsafe_arena_release_quit_resp() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:protocol.group.GroupPacket.quit_resp)
+  if (_internal_has_quit_resp()) {
+    clear_has_body();
+    ::protocol::group::GroupQuitResponse* temp = _impl_.body_.quit_resp_;
+    _impl_.body_.quit_resp_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void GroupPacket::unsafe_arena_set_allocated_quit_resp(::protocol::group::GroupQuitResponse* quit_resp) {
+  clear_body();
+  if (quit_resp) {
+    set_has_quit_resp();
+    _impl_.body_.quit_resp_ = quit_resp;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:protocol.group.GroupPacket.quit_resp)
+}
+inline ::protocol::group::GroupQuitResponse* GroupPacket::_internal_mutable_quit_resp() {
+  if (!_internal_has_quit_resp()) {
+    clear_body();
+    set_has_quit_resp();
+    _impl_.body_.quit_resp_ = CreateMaybeMessage< ::protocol::group::GroupQuitResponse >(GetArenaForAllocation());
+  }
+  return _impl_.body_.quit_resp_;
+}
+inline ::protocol::group::GroupQuitResponse* GroupPacket::mutable_quit_resp() {
+  ::protocol::group::GroupQuitResponse* _msg = _internal_mutable_quit_resp();
+  // @@protoc_insertion_point(field_mutable:protocol.group.GroupPacket.quit_resp)
+  return _msg;
+}
+
 inline bool GroupPacket::has_body() const {
   return body_case() != BODY_NOT_SET;
 }
@@ -7283,6 +7858,10 @@ inline GroupPacket::BodyCase GroupPacket::body_case() const {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------

@@ -51,6 +51,9 @@ int reject_join(Db&, uint32_t acting_uid, uint32_t group_id, uint32_t applicant_
 // 移除成员 (群主可移非自己外任何人; 管理员仅能移除普通成员)。
 int remove_member(Db&, uint32_t acting_uid, uint32_t group_id, uint32_t target_uid);
 
+// 主动退群: 成员把自己移出群。非成员 ERR_NOT_GROUP_MEMBER; 群主 ERR_GROUP_OWNER(须解散群)。
+int quit_group(Db&, uint32_t user_id, uint32_t group_id);
+
 // 群成员列表 (群内成员可查, JOIN users 取昵称)。
 int member_list(Db&, uint32_t acting_uid, uint32_t group_id,
                 std::vector<protocol::group::GroupMemberItem>& members);
