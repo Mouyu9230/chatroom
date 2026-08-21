@@ -36,10 +36,17 @@ public:
     MpscQueue<Task>&       task_queue()       { return task_queue_; }
     MpscQueue<TaskResult>& result_queue()      { return result_queue_; }
 
+    /// 结果就绪通知事件描述符(eventfd, 可注册到 epoll)。
+    /// 每次 result_queue_ 入队后写入一次; 主线程读到可读事件后应排空计数器
+    /// 并调用 try_get_result 循环取回所有结果。创建失败返回 -1(降级为轮询)。
+    int result_event_fd() const { return result_event_fd_; }
+
 private:
     void worker_loop(TaskHandler handler);
+    void notify_result();   // 向 eventfd 写 1, 唤醒等待结果的 epoll 循环
 
     std::vector<std::thread> workers_;
     MpscQueue<Task>          task_queue_;
     MpscQueue<TaskResult>    result_queue_;
+    int result_event_fd_ = -1;   // 结果就绪通知; 创建失败为 -1
 };

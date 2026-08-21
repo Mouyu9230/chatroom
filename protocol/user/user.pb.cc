@@ -240,6 +240,46 @@ struct FriendPendingListResponseDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FriendPendingListResponseDefaultTypeInternal _FriendPendingListResponse_default_instance_;
+PROTOBUF_CONSTEXPR FriendListRequest::FriendListRequest(
+    ::_pbi::ConstantInitialized) {}
+struct FriendListRequestDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR FriendListRequestDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~FriendListRequestDefaultTypeInternal() {}
+  union {
+    FriendListRequest _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FriendListRequestDefaultTypeInternal _FriendListRequest_default_instance_;
+PROTOBUF_CONSTEXPR FriendListItem::FriendListItem(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.nickname_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
+  , /*decltype(_impl_.user_id_)*/0u
+  , /*decltype(_impl_.online_)*/false
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct FriendListItemDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR FriendListItemDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~FriendListItemDefaultTypeInternal() {}
+  union {
+    FriendListItem _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FriendListItemDefaultTypeInternal _FriendListItem_default_instance_;
+PROTOBUF_CONSTEXPR FriendListResponse::FriendListResponse(
+    ::_pbi::ConstantInitialized): _impl_{
+    /*decltype(_impl_.friends_)*/{}
+  , /*decltype(_impl_.err_)*/0
+  , /*decltype(_impl_._cached_size_)*/{}} {}
+struct FriendListResponseDefaultTypeInternal {
+  PROTOBUF_CONSTEXPR FriendListResponseDefaultTypeInternal()
+      : _instance(::_pbi::ConstantInitialized{}) {}
+  ~FriendListResponseDefaultTypeInternal() {}
+  union {
+    FriendListResponse _instance;
+  };
+};
+PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FriendListResponseDefaultTypeInternal _FriendListResponse_default_instance_;
 PROTOBUF_CONSTEXPR FriendDelRequest::FriendDelRequest(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.friend_id_)*/0u
@@ -266,34 +306,6 @@ struct FriendDelResponseDefaultTypeInternal {
   };
 };
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FriendDelResponseDefaultTypeInternal _FriendDelResponse_default_instance_;
-PROTOBUF_CONSTEXPR FriendCheckRequest::FriendCheckRequest(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.friend_id_)*/0u
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct FriendCheckRequestDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR FriendCheckRequestDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~FriendCheckRequestDefaultTypeInternal() {}
-  union {
-    FriendCheckRequest _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FriendCheckRequestDefaultTypeInternal _FriendCheckRequest_default_instance_;
-PROTOBUF_CONSTEXPR FriendCheckResponse::FriendCheckResponse(
-    ::_pbi::ConstantInitialized): _impl_{
-    /*decltype(_impl_.nickname_)*/{&::_pbi::fixed_address_empty_string, ::_pbi::ConstantInitialized{}}
-  , /*decltype(_impl_.err_)*/0
-  , /*decltype(_impl_.is_friend_)*/false
-  , /*decltype(_impl_._cached_size_)*/{}} {}
-struct FriendCheckResponseDefaultTypeInternal {
-  PROTOBUF_CONSTEXPR FriendCheckResponseDefaultTypeInternal()
-      : _instance(::_pbi::ConstantInitialized{}) {}
-  ~FriendCheckResponseDefaultTypeInternal() {}
-  union {
-    FriendCheckResponse _instance;
-  };
-};
-PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 FriendCheckResponseDefaultTypeInternal _FriendCheckResponse_default_instance_;
 PROTOBUF_CONSTEXPR FriendBlockRequest::FriendBlockRequest(
     ::_pbi::ConstantInitialized): _impl_{
     /*decltype(_impl_.friend_id_)*/0u
@@ -364,7 +376,7 @@ struct UserPacketDefaultTypeInternal {
 PROTOBUF_ATTRIBUTE_NO_DESTROY PROTOBUF_CONSTINIT PROTOBUF_ATTRIBUTE_INIT_PRIORITY1 UserPacketDefaultTypeInternal _UserPacket_default_instance_;
 }  // namespace user
 }  // namespace protocol
-static ::_pb::Metadata file_level_metadata_user_2eproto[25];
+static ::_pb::Metadata file_level_metadata_user_2eproto[26];
 static const ::_pb::EnumDescriptor* file_level_enum_descriptors_user_2eproto[1];
 static constexpr ::_pb::ServiceDescriptor const** file_level_service_descriptors_user_2eproto = nullptr;
 
@@ -495,6 +507,29 @@ const uint32_t TableStruct_user_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   PROTOBUF_FIELD_OFFSET(::protocol::user::FriendPendingListResponse, _impl_.items_),
   PROTOBUF_FIELD_OFFSET(::protocol::user::FriendPendingListResponse, _impl_.err_),
   ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendListRequest, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendListItem, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendListItem, _impl_.user_id_),
+  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendListItem, _impl_.nickname_),
+  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendListItem, _impl_.online_),
+  ~0u,  // no _has_bits_
+  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendListResponse, _internal_metadata_),
+  ~0u,  // no _extensions_
+  ~0u,  // no _oneof_case_
+  ~0u,  // no _weak_field_map_
+  ~0u,  // no _inlined_string_donated_
+  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendListResponse, _impl_.err_),
+  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendListResponse, _impl_.friends_),
+  ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::protocol::user::FriendDelRequest, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
@@ -508,22 +543,6 @@ const uint32_t TableStruct_user_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(pro
   ~0u,  // no _weak_field_map_
   ~0u,  // no _inlined_string_donated_
   PROTOBUF_FIELD_OFFSET(::protocol::user::FriendDelResponse, _impl_.err_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendCheckRequest, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendCheckRequest, _impl_.friend_id_),
-  ~0u,  // no _has_bits_
-  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendCheckResponse, _internal_metadata_),
-  ~0u,  // no _extensions_
-  ~0u,  // no _oneof_case_
-  ~0u,  // no _weak_field_map_
-  ~0u,  // no _inlined_string_donated_
-  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendCheckResponse, _impl_.err_),
-  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendCheckResponse, _impl_.is_friend_),
-  PROTOBUF_FIELD_OFFSET(::protocol::user::FriendCheckResponse, _impl_.nickname_),
   ~0u,  // no _has_bits_
   PROTOBUF_FIELD_OFFSET(::protocol::user::FriendBlockRequest, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -601,15 +620,16 @@ static const ::_pbi::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protode
   { 101, -1, -1, sizeof(::protocol::user::FriendPendingListRequest)},
   { 107, -1, -1, sizeof(::protocol::user::FriendPendingItem)},
   { 117, -1, -1, sizeof(::protocol::user::FriendPendingListResponse)},
-  { 125, -1, -1, sizeof(::protocol::user::FriendDelRequest)},
-  { 132, -1, -1, sizeof(::protocol::user::FriendDelResponse)},
-  { 139, -1, -1, sizeof(::protocol::user::FriendCheckRequest)},
-  { 146, -1, -1, sizeof(::protocol::user::FriendCheckResponse)},
-  { 155, -1, -1, sizeof(::protocol::user::FriendBlockRequest)},
-  { 163, -1, -1, sizeof(::protocol::user::FriendBlockResponse)},
-  { 170, -1, -1, sizeof(::protocol::user::SystemNotify)},
-  { 177, -1, -1, sizeof(::protocol::user::UserStatusNotify)},
-  { 185, -1, -1, sizeof(::protocol::user::UserPacket)},
+  { 125, -1, -1, sizeof(::protocol::user::FriendListRequest)},
+  { 131, -1, -1, sizeof(::protocol::user::FriendListItem)},
+  { 140, -1, -1, sizeof(::protocol::user::FriendListResponse)},
+  { 148, -1, -1, sizeof(::protocol::user::FriendDelRequest)},
+  { 155, -1, -1, sizeof(::protocol::user::FriendDelResponse)},
+  { 162, -1, -1, sizeof(::protocol::user::FriendBlockRequest)},
+  { 170, -1, -1, sizeof(::protocol::user::FriendBlockResponse)},
+  { 177, -1, -1, sizeof(::protocol::user::SystemNotify)},
+  { 184, -1, -1, sizeof(::protocol::user::UserStatusNotify)},
+  { 192, -1, -1, sizeof(::protocol::user::UserPacket)},
 };
 
 static const ::_pb::Message* const file_default_instances[] = {
@@ -629,10 +649,11 @@ static const ::_pb::Message* const file_default_instances[] = {
   &::protocol::user::_FriendPendingListRequest_default_instance_._instance,
   &::protocol::user::_FriendPendingItem_default_instance_._instance,
   &::protocol::user::_FriendPendingListResponse_default_instance_._instance,
+  &::protocol::user::_FriendListRequest_default_instance_._instance,
+  &::protocol::user::_FriendListItem_default_instance_._instance,
+  &::protocol::user::_FriendListResponse_default_instance_._instance,
   &::protocol::user::_FriendDelRequest_default_instance_._instance,
   &::protocol::user::_FriendDelResponse_default_instance_._instance,
-  &::protocol::user::_FriendCheckRequest_default_instance_._instance,
-  &::protocol::user::_FriendCheckResponse_default_instance_._instance,
   &::protocol::user::_FriendBlockRequest_default_instance_._instance,
   &::protocol::user::_FriendBlockResponse_default_instance_._instance,
   &::protocol::user::_SystemNotify_default_instance_._instance,
@@ -666,67 +687,68 @@ const char descriptor_table_protodef_user_2eproto[] PROTOBUF_SECTION_VARIABLE(pr
   "emark\030\003 \001(\t\022\n\n\002ts\030\004 \001(\004\"q\n\031FriendPending"
   "ListResponse\022/\n\005items\030\001 \003(\0132 .protocol.u"
   "ser.FriendPendingItem\022#\n\003err\030\002 \001(\0162\026.pro"
-  "tocol.user.ErrCode\"%\n\020FriendDelRequest\022\021"
-  "\n\tfriend_id\030\001 \001(\r\"8\n\021FriendDelResponse\022#"
-  "\n\003err\030\001 \001(\0162\026.protocol.user.ErrCode\"\'\n\022F"
-  "riendCheckRequest\022\021\n\tfriend_id\030\001 \001(\r\"_\n\023"
-  "FriendCheckResponse\022#\n\003err\030\001 \001(\0162\026.proto"
-  "col.user.ErrCode\022\021\n\tis_friend\030\002 \001(\010\022\020\n\010n"
-  "ickname\030\003 \001(\t\"6\n\022FriendBlockRequest\022\021\n\tf"
-  "riend_id\030\001 \001(\r\022\r\n\005block\030\002 \001(\010\":\n\023FriendB"
-  "lockResponse\022#\n\003err\030\001 \001(\0162\026.protocol.use"
-  "r.ErrCode\"\037\n\014SystemNotify\022\017\n\007content\030\001 \001"
-  "(\t\"3\n\020UserStatusNotify\022\017\n\007user_id\030\001 \001(\r\022"
-  "\016\n\006online\030\002 \001(\010\"\275\n\n\nUserPacket\0226\n\014regist"
-  "er_req\030\001 \001(\0132\036.protocol.user.RegisterReq"
-  "uestH\000\0228\n\rregister_resp\030\002 \001(\0132\037.protocol"
-  ".user.RegisterResponseH\000\0220\n\tlogin_req\030\003 "
-  "\001(\0132\033.protocol.user.LoginRequestH\000\0222\n\nlo"
-  "gin_resp\030\004 \001(\0132\034.protocol.user.LoginResp"
-  "onseH\000\0222\n\nlogout_req\030\005 \001(\0132\034.protocol.us"
-  "er.LogoutRequestH\000\0224\n\013logout_resp\030\006 \001(\0132"
-  "\035.protocol.user.LogoutResponseH\000\0222\n\ncanc"
-  "el_req\030\007 \001(\0132\034.protocol.user.CancelReque"
-  "stH\000\0224\n\013cancel_resp\030\010 \001(\0132\035.protocol.use"
-  "r.CancelResponseH\000\0224\n\rheartbeat_req\030\t \001("
-  "\0132\033.protocol.user.HeartbeatReqH\000\0226\n\016hear"
-  "tbeat_resp\030\n \001(\0132\034.protocol.user.Heartbe"
-  "atRespH\000\022A\n\022friend_request_req\030\013 \001(\0132#.p"
-  "rotocol.user.FriendRequestRequestH\000\022C\n\023f"
-  "riend_request_resp\030\014 \001(\0132$.protocol.user"
-  ".FriendRequestResponseH\000\022J\n\027friend_pendi"
-  "ng_list_req\030\r \001(\0132\'.protocol.user.Friend"
-  "PendingListRequestH\000\022L\n\030friend_pending_l"
-  "ist_resp\030\016 \001(\0132(.protocol.user.FriendPen"
-  "dingListResponseH\000\0229\n\016friend_del_req\030\017 \001"
-  "(\0132\037.protocol.user.FriendDelRequestH\000\022;\n"
-  "\017friend_del_resp\030\020 \001(\0132 .protocol.user.F"
-  "riendDelResponseH\000\022=\n\020friend_check_req\030\021"
-  " \001(\0132!.protocol.user.FriendCheckRequestH"
-  "\000\022\?\n\021friend_check_resp\030\022 \001(\0132\".protocol."
-  "user.FriendCheckResponseH\000\022=\n\020friend_blo"
-  "ck_req\030\023 \001(\0132!.protocol.user.FriendBlock"
-  "RequestH\000\022\?\n\021friend_block_resp\030\024 \001(\0132\".p"
-  "rotocol.user.FriendBlockResponseH\000\0224\n\rsy"
-  "stem_notify\030\025 \001(\0132\033.protocol.user.System"
-  "NotifyH\000\022=\n\022user_status_notify\030\026 \001(\0132\037.p"
-  "rotocol.user.UserStatusNotifyH\000B\006\n\004body*"
-  "\346\002\n\007ErrCode\022\017\n\013ERR_SUCCESS\020\000\022\016\n\nERR_SYST"
-  "EM\020\001\022\025\n\021ERR_INVALID_PARAM\020\002\022\024\n\020ERR_INVAL"
-  "ID_USER\020\003\022\023\n\017ERR_USER_EXISTS\020\004\022\025\n\021ERR_NO"
-  "T_LOGGED_IN\020\005\022\014\n\010ERR_FULL\020\006\022\022\n\016ERR_NOT_F"
-  "RIEND\020\007\022\026\n\022ERR_ALREADY_FRIEND\020\010\022\017\n\013ERR_B"
-  "LOCKED\020\t\022\027\n\023ERR_REQUEST_PENDING\020\n\022\027\n\023ERR"
-  "_GROUP_NOT_FOUND\020\013\022\030\n\024ERR_NOT_GROUP_MEMB"
-  "ER\020\014\022\027\n\023ERR_NOT_GROUP_ADMIN\020\r\022\027\n\023ERR_NOT"
-  "_GROUP_OWNER\020\016\022\030\n\024ERR_ALREADY_IN_GROUP\020\017"
-  "b\006proto3"
+  "tocol.user.ErrCode\"\023\n\021FriendListRequest\""
+  "C\n\016FriendListItem\022\017\n\007user_id\030\001 \001(\r\022\020\n\010ni"
+  "ckname\030\002 \001(\t\022\016\n\006online\030\003 \001(\010\"i\n\022FriendLi"
+  "stResponse\022#\n\003err\030\001 \001(\0162\026.protocol.user."
+  "ErrCode\022.\n\007friends\030\002 \003(\0132\035.protocol.user"
+  ".FriendListItem\"%\n\020FriendDelRequest\022\021\n\tf"
+  "riend_id\030\001 \001(\r\"8\n\021FriendDelResponse\022#\n\003e"
+  "rr\030\001 \001(\0162\026.protocol.user.ErrCode\"6\n\022Frie"
+  "ndBlockRequest\022\021\n\tfriend_id\030\001 \001(\r\022\r\n\005blo"
+  "ck\030\002 \001(\010\":\n\023FriendBlockResponse\022#\n\003err\030\001"
+  " \001(\0162\026.protocol.user.ErrCode\"\037\n\014SystemNo"
+  "tify\022\017\n\007content\030\001 \001(\t\"3\n\020UserStatusNotif"
+  "y\022\017\n\007user_id\030\001 \001(\r\022\016\n\006online\030\002 \001(\010\"\271\n\n\nU"
+  "serPacket\0226\n\014register_req\030\001 \001(\0132\036.protoc"
+  "ol.user.RegisterRequestH\000\0228\n\rregister_re"
+  "sp\030\002 \001(\0132\037.protocol.user.RegisterRespons"
+  "eH\000\0220\n\tlogin_req\030\003 \001(\0132\033.protocol.user.L"
+  "oginRequestH\000\0222\n\nlogin_resp\030\004 \001(\0132\034.prot"
+  "ocol.user.LoginResponseH\000\0222\n\nlogout_req\030"
+  "\005 \001(\0132\034.protocol.user.LogoutRequestH\000\0224\n"
+  "\013logout_resp\030\006 \001(\0132\035.protocol.user.Logou"
+  "tResponseH\000\0222\n\ncancel_req\030\007 \001(\0132\034.protoc"
+  "ol.user.CancelRequestH\000\0224\n\013cancel_resp\030\010"
+  " \001(\0132\035.protocol.user.CancelResponseH\000\0224\n"
+  "\rheartbeat_req\030\t \001(\0132\033.protocol.user.Hea"
+  "rtbeatReqH\000\0226\n\016heartbeat_resp\030\n \001(\0132\034.pr"
+  "otocol.user.HeartbeatRespH\000\022A\n\022friend_re"
+  "quest_req\030\013 \001(\0132#.protocol.user.FriendRe"
+  "questRequestH\000\022C\n\023friend_request_resp\030\014 "
+  "\001(\0132$.protocol.user.FriendRequestRespons"
+  "eH\000\022J\n\027friend_pending_list_req\030\r \001(\0132\'.p"
+  "rotocol.user.FriendPendingListRequestH\000\022"
+  "L\n\030friend_pending_list_resp\030\016 \001(\0132(.prot"
+  "ocol.user.FriendPendingListResponseH\000\0229\n"
+  "\016friend_del_req\030\017 \001(\0132\037.protocol.user.Fr"
+  "iendDelRequestH\000\022;\n\017friend_del_resp\030\020 \001("
+  "\0132 .protocol.user.FriendDelResponseH\000\022=\n"
+  "\020friend_block_req\030\023 \001(\0132!.protocol.user."
+  "FriendBlockRequestH\000\022\?\n\021friend_block_res"
+  "p\030\024 \001(\0132\".protocol.user.FriendBlockRespo"
+  "nseH\000\0224\n\rsystem_notify\030\025 \001(\0132\033.protocol."
+  "user.SystemNotifyH\000\022=\n\022user_status_notif"
+  "y\030\026 \001(\0132\037.protocol.user.UserStatusNotify"
+  "H\000\022;\n\017friend_list_req\030\027 \001(\0132 .protocol.u"
+  "ser.FriendListRequestH\000\022=\n\020friend_list_r"
+  "esp\030\030 \001(\0132!.protocol.user.FriendListResp"
+  "onseH\000B\006\n\004body*\346\002\n\007ErrCode\022\017\n\013ERR_SUCCES"
+  "S\020\000\022\016\n\nERR_SYSTEM\020\001\022\025\n\021ERR_INVALID_PARAM"
+  "\020\002\022\024\n\020ERR_INVALID_USER\020\003\022\023\n\017ERR_USER_EXI"
+  "STS\020\004\022\025\n\021ERR_NOT_LOGGED_IN\020\005\022\014\n\010ERR_FULL"
+  "\020\006\022\022\n\016ERR_NOT_FRIEND\020\007\022\026\n\022ERR_ALREADY_FR"
+  "IEND\020\010\022\017\n\013ERR_BLOCKED\020\t\022\027\n\023ERR_REQUEST_P"
+  "ENDING\020\n\022\027\n\023ERR_GROUP_NOT_FOUND\020\013\022\030\n\024ERR"
+  "_NOT_GROUP_MEMBER\020\014\022\027\n\023ERR_NOT_GROUP_ADM"
+  "IN\020\r\022\027\n\023ERR_NOT_GROUP_OWNER\020\016\022\030\n\024ERR_ALR"
+  "EADY_IN_GROUP\020\017b\006proto3"
   ;
 static ::_pbi::once_flag descriptor_table_user_2eproto_once;
 const ::_pbi::DescriptorTable descriptor_table_user_2eproto = {
-    false, false, 3168, descriptor_table_protodef_user_2eproto,
+    false, false, 3223, descriptor_table_protodef_user_2eproto,
     "user.proto",
-    &descriptor_table_user_2eproto_once, nullptr, 0, 25,
+    &descriptor_table_user_2eproto_once, nullptr, 0, 26,
     schemas, file_default_instances, TableStruct_user_2eproto::offsets,
     file_level_metadata_user_2eproto, file_level_enum_descriptors_user_2eproto,
     file_level_service_descriptors_user_2eproto,
@@ -3967,6 +3989,524 @@ void FriendPendingListResponse::InternalSwap(FriendPendingListResponse* other) {
 
 // ===================================================================
 
+class FriendListRequest::_Internal {
+ public:
+};
+
+FriendListRequest::FriendListRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase(arena, is_message_owned) {
+  // @@protoc_insertion_point(arena_constructor:protocol.user.FriendListRequest)
+}
+FriendListRequest::FriendListRequest(const FriendListRequest& from)
+  : ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase() {
+  FriendListRequest* const _this = this; (void)_this;
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  // @@protoc_insertion_point(copy_constructor:protocol.user.FriendListRequest)
+}
+
+
+
+
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData FriendListRequest::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::CopyImpl,
+    ::PROTOBUF_NAMESPACE_ID::internal::ZeroFieldsBase::MergeImpl,
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*FriendListRequest::GetClassData() const { return &_class_data_; }
+
+
+
+
+
+
+
+::PROTOBUF_NAMESPACE_ID::Metadata FriendListRequest::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_user_2eproto_getter, &descriptor_table_user_2eproto_once,
+      file_level_metadata_user_2eproto[16]);
+}
+
+// ===================================================================
+
+class FriendListItem::_Internal {
+ public:
+};
+
+FriendListItem::FriendListItem(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protocol.user.FriendListItem)
+}
+FriendListItem::FriendListItem(const FriendListItem& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  FriendListItem* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.nickname_){}
+    , decltype(_impl_.user_id_){}
+    , decltype(_impl_.online_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _impl_.nickname_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.nickname_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+  if (!from._internal_nickname().empty()) {
+    _this->_impl_.nickname_.Set(from._internal_nickname(), 
+      _this->GetArenaForAllocation());
+  }
+  ::memcpy(&_impl_.user_id_, &from._impl_.user_id_,
+    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.online_) -
+    reinterpret_cast<char*>(&_impl_.user_id_)) + sizeof(_impl_.online_));
+  // @@protoc_insertion_point(copy_constructor:protocol.user.FriendListItem)
+}
+
+inline void FriendListItem::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.nickname_){}
+    , decltype(_impl_.user_id_){0u}
+    , decltype(_impl_.online_){false}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+  _impl_.nickname_.InitDefault();
+  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
+    _impl_.nickname_.Set("", GetArenaForAllocation());
+  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
+}
+
+FriendListItem::~FriendListItem() {
+  // @@protoc_insertion_point(destructor:protocol.user.FriendListItem)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void FriendListItem::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.nickname_.Destroy();
+}
+
+void FriendListItem::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void FriendListItem::Clear() {
+// @@protoc_insertion_point(message_clear_start:protocol.user.FriendListItem)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.nickname_.ClearToEmpty();
+  ::memset(&_impl_.user_id_, 0, static_cast<size_t>(
+      reinterpret_cast<char*>(&_impl_.online_) -
+      reinterpret_cast<char*>(&_impl_.user_id_)) + sizeof(_impl_.online_));
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* FriendListItem::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // uint32 user_id = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          _impl_.user_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // string nickname = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          auto str = _internal_mutable_nickname();
+          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
+          CHK_(ptr);
+          CHK_(::_pbi::VerifyUTF8(str, "protocol.user.FriendListItem.nickname"));
+        } else
+          goto handle_unusual;
+        continue;
+      // bool online = 3;
+      case 3:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 24)) {
+          _impl_.online_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* FriendListItem::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protocol.user.FriendListItem)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // uint32 user_id = 1;
+  if (this->_internal_user_id() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_user_id(), target);
+  }
+
+  // string nickname = 2;
+  if (!this->_internal_nickname().empty()) {
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
+      this->_internal_nickname().data(), static_cast<int>(this->_internal_nickname().length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
+      "protocol.user.FriendListItem.nickname");
+    target = stream->WriteStringMaybeAliased(
+        2, this->_internal_nickname(), target);
+  }
+
+  // bool online = 3;
+  if (this->_internal_online() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteBoolToArray(3, this->_internal_online(), target);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protocol.user.FriendListItem)
+  return target;
+}
+
+size_t FriendListItem::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protocol.user.FriendListItem)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // string nickname = 2;
+  if (!this->_internal_nickname().empty()) {
+    total_size += 1 +
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+        this->_internal_nickname());
+  }
+
+  // uint32 user_id = 1;
+  if (this->_internal_user_id() != 0) {
+    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_user_id());
+  }
+
+  // bool online = 3;
+  if (this->_internal_online() != 0) {
+    total_size += 1 + 1;
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData FriendListItem::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    FriendListItem::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*FriendListItem::GetClassData() const { return &_class_data_; }
+
+
+void FriendListItem::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<FriendListItem*>(&to_msg);
+  auto& from = static_cast<const FriendListItem&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protocol.user.FriendListItem)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  if (!from._internal_nickname().empty()) {
+    _this->_internal_set_nickname(from._internal_nickname());
+  }
+  if (from._internal_user_id() != 0) {
+    _this->_internal_set_user_id(from._internal_user_id());
+  }
+  if (from._internal_online() != 0) {
+    _this->_internal_set_online(from._internal_online());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void FriendListItem::CopyFrom(const FriendListItem& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protocol.user.FriendListItem)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool FriendListItem::IsInitialized() const {
+  return true;
+}
+
+void FriendListItem::InternalSwap(FriendListItem* other) {
+  using std::swap;
+  auto* lhs_arena = GetArenaForAllocation();
+  auto* rhs_arena = other->GetArenaForAllocation();
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
+      &_impl_.nickname_, lhs_arena,
+      &other->_impl_.nickname_, rhs_arena
+  );
+  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
+      PROTOBUF_FIELD_OFFSET(FriendListItem, _impl_.online_)
+      + sizeof(FriendListItem::_impl_.online_)
+      - PROTOBUF_FIELD_OFFSET(FriendListItem, _impl_.user_id_)>(
+          reinterpret_cast<char*>(&_impl_.user_id_),
+          reinterpret_cast<char*>(&other->_impl_.user_id_));
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata FriendListItem::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_user_2eproto_getter, &descriptor_table_user_2eproto_once,
+      file_level_metadata_user_2eproto[17]);
+}
+
+// ===================================================================
+
+class FriendListResponse::_Internal {
+ public:
+};
+
+FriendListResponse::FriendListResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
+                         bool is_message_owned)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
+  SharedCtor(arena, is_message_owned);
+  // @@protoc_insertion_point(arena_constructor:protocol.user.FriendListResponse)
+}
+FriendListResponse::FriendListResponse(const FriendListResponse& from)
+  : ::PROTOBUF_NAMESPACE_ID::Message() {
+  FriendListResponse* const _this = this; (void)_this;
+  new (&_impl_) Impl_{
+      decltype(_impl_.friends_){from._impl_.friends_}
+    , decltype(_impl_.err_){}
+    , /*decltype(_impl_._cached_size_)*/{}};
+
+  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+  _this->_impl_.err_ = from._impl_.err_;
+  // @@protoc_insertion_point(copy_constructor:protocol.user.FriendListResponse)
+}
+
+inline void FriendListResponse::SharedCtor(
+    ::_pb::Arena* arena, bool is_message_owned) {
+  (void)arena;
+  (void)is_message_owned;
+  new (&_impl_) Impl_{
+      decltype(_impl_.friends_){arena}
+    , decltype(_impl_.err_){0}
+    , /*decltype(_impl_._cached_size_)*/{}
+  };
+}
+
+FriendListResponse::~FriendListResponse() {
+  // @@protoc_insertion_point(destructor:protocol.user.FriendListResponse)
+  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
+  (void)arena;
+    return;
+  }
+  SharedDtor();
+}
+
+inline void FriendListResponse::SharedDtor() {
+  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
+  _impl_.friends_.~RepeatedPtrField();
+}
+
+void FriendListResponse::SetCachedSize(int size) const {
+  _impl_._cached_size_.Set(size);
+}
+
+void FriendListResponse::Clear() {
+// @@protoc_insertion_point(message_clear_start:protocol.user.FriendListResponse)
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  _impl_.friends_.Clear();
+  _impl_.err_ = 0;
+  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+}
+
+const char* FriendListResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
+#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
+  while (!ctx->Done(&ptr)) {
+    uint32_t tag;
+    ptr = ::_pbi::ReadTag(ptr, &tag);
+    switch (tag >> 3) {
+      // .protocol.user.ErrCode err = 1;
+      case 1:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
+          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
+          CHK_(ptr);
+          _internal_set_err(static_cast<::protocol::user::ErrCode>(val));
+        } else
+          goto handle_unusual;
+        continue;
+      // repeated .protocol.user.FriendListItem friends = 2;
+      case 2:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 18)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            ptr = ctx->ParseMessage(_internal_add_friends(), ptr);
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<18>(ptr));
+        } else
+          goto handle_unusual;
+        continue;
+      default:
+        goto handle_unusual;
+    }  // switch
+  handle_unusual:
+    if ((tag == 0) || ((tag & 7) == 4)) {
+      CHK_(ptr);
+      ctx->SetLastTag(tag);
+      goto message_done;
+    }
+    ptr = UnknownFieldParse(
+        tag,
+        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
+        ptr, ctx);
+    CHK_(ptr != nullptr);
+  }  // while
+message_done:
+  return ptr;
+failure:
+  ptr = nullptr;
+  goto message_done;
+#undef CHK_
+}
+
+uint8_t* FriendListResponse::_InternalSerialize(
+    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
+  // @@protoc_insertion_point(serialize_to_array_start:protocol.user.FriendListResponse)
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  // .protocol.user.ErrCode err = 1;
+  if (this->_internal_err() != 0) {
+    target = stream->EnsureSpace(target);
+    target = ::_pbi::WireFormatLite::WriteEnumToArray(
+      1, this->_internal_err(), target);
+  }
+
+  // repeated .protocol.user.FriendListItem friends = 2;
+  for (unsigned i = 0,
+      n = static_cast<unsigned>(this->_internal_friends_size()); i < n; i++) {
+    const auto& repfield = this->_internal_friends(i);
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(2, repfield, repfield.GetCachedSize(), target, stream);
+  }
+
+  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
+    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
+        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
+  }
+  // @@protoc_insertion_point(serialize_to_array_end:protocol.user.FriendListResponse)
+  return target;
+}
+
+size_t FriendListResponse::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:protocol.user.FriendListResponse)
+  size_t total_size = 0;
+
+  uint32_t cached_has_bits = 0;
+  // Prevent compiler warnings about cached_has_bits being unused
+  (void) cached_has_bits;
+
+  // repeated .protocol.user.FriendListItem friends = 2;
+  total_size += 1UL * this->_internal_friends_size();
+  for (const auto& msg : this->_impl_.friends_) {
+    total_size +=
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(msg);
+  }
+
+  // .protocol.user.ErrCode err = 1;
+  if (this->_internal_err() != 0) {
+    total_size += 1 +
+      ::_pbi::WireFormatLite::EnumSize(this->_internal_err());
+  }
+
+  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
+}
+
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData FriendListResponse::_class_data_ = {
+    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
+    FriendListResponse::MergeImpl
+};
+const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*FriendListResponse::GetClassData() const { return &_class_data_; }
+
+
+void FriendListResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
+  auto* const _this = static_cast<FriendListResponse*>(&to_msg);
+  auto& from = static_cast<const FriendListResponse&>(from_msg);
+  // @@protoc_insertion_point(class_specific_merge_from_start:protocol.user.FriendListResponse)
+  GOOGLE_DCHECK_NE(&from, _this);
+  uint32_t cached_has_bits = 0;
+  (void) cached_has_bits;
+
+  _this->_impl_.friends_.MergeFrom(from._impl_.friends_);
+  if (from._internal_err() != 0) {
+    _this->_internal_set_err(from._internal_err());
+  }
+  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
+}
+
+void FriendListResponse::CopyFrom(const FriendListResponse& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:protocol.user.FriendListResponse)
+  if (&from == this) return;
+  Clear();
+  MergeFrom(from);
+}
+
+bool FriendListResponse::IsInitialized() const {
+  return true;
+}
+
+void FriendListResponse::InternalSwap(FriendListResponse* other) {
+  using std::swap;
+  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
+  _impl_.friends_.InternalSwap(&other->_impl_.friends_);
+  swap(_impl_.err_, other->_impl_.err_);
+}
+
+::PROTOBUF_NAMESPACE_ID::Metadata FriendListResponse::GetMetadata() const {
+  return ::_pbi::AssignDescriptors(
+      &descriptor_table_user_2eproto_getter, &descriptor_table_user_2eproto_once,
+      file_level_metadata_user_2eproto[18]);
+}
+
+// ===================================================================
+
 class FriendDelRequest::_Internal {
  public:
 };
@@ -4140,7 +4680,7 @@ void FriendDelRequest::InternalSwap(FriendDelRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata FriendDelRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_user_2eproto_getter, &descriptor_table_user_2eproto_once,
-      file_level_metadata_user_2eproto[16]);
+      file_level_metadata_user_2eproto[19]);
 }
 
 // ===================================================================
@@ -4321,451 +4861,7 @@ void FriendDelResponse::InternalSwap(FriendDelResponse* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata FriendDelResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_user_2eproto_getter, &descriptor_table_user_2eproto_once,
-      file_level_metadata_user_2eproto[17]);
-}
-
-// ===================================================================
-
-class FriendCheckRequest::_Internal {
- public:
-};
-
-FriendCheckRequest::FriendCheckRequest(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:protocol.user.FriendCheckRequest)
-}
-FriendCheckRequest::FriendCheckRequest(const FriendCheckRequest& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  FriendCheckRequest* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.friend_id_){}
-    , /*decltype(_impl_._cached_size_)*/{}};
-
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _this->_impl_.friend_id_ = from._impl_.friend_id_;
-  // @@protoc_insertion_point(copy_constructor:protocol.user.FriendCheckRequest)
-}
-
-inline void FriendCheckRequest::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.friend_id_){0u}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
-}
-
-FriendCheckRequest::~FriendCheckRequest() {
-  // @@protoc_insertion_point(destructor:protocol.user.FriendCheckRequest)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
-  SharedDtor();
-}
-
-inline void FriendCheckRequest::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-}
-
-void FriendCheckRequest::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void FriendCheckRequest::Clear() {
-// @@protoc_insertion_point(message_clear_start:protocol.user.FriendCheckRequest)
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  _impl_.friend_id_ = 0u;
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* FriendCheckRequest::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // uint32 friend_id = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
-          _impl_.friend_id_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
-}
-
-uint8_t* FriendCheckRequest::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:protocol.user.FriendCheckRequest)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // uint32 friend_id = 1;
-  if (this->_internal_friend_id() != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteUInt32ToArray(1, this->_internal_friend_id(), target);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:protocol.user.FriendCheckRequest)
-  return target;
-}
-
-size_t FriendCheckRequest::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:protocol.user.FriendCheckRequest)
-  size_t total_size = 0;
-
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  // uint32 friend_id = 1;
-  if (this->_internal_friend_id() != 0) {
-    total_size += ::_pbi::WireFormatLite::UInt32SizePlusOne(this->_internal_friend_id());
-  }
-
-  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
-}
-
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData FriendCheckRequest::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    FriendCheckRequest::MergeImpl
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*FriendCheckRequest::GetClassData() const { return &_class_data_; }
-
-
-void FriendCheckRequest::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<FriendCheckRequest*>(&to_msg);
-  auto& from = static_cast<const FriendCheckRequest&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:protocol.user.FriendCheckRequest)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  if (from._internal_friend_id() != 0) {
-    _this->_internal_set_friend_id(from._internal_friend_id());
-  }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-}
-
-void FriendCheckRequest::CopyFrom(const FriendCheckRequest& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:protocol.user.FriendCheckRequest)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool FriendCheckRequest::IsInitialized() const {
-  return true;
-}
-
-void FriendCheckRequest::InternalSwap(FriendCheckRequest* other) {
-  using std::swap;
-  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  swap(_impl_.friend_id_, other->_impl_.friend_id_);
-}
-
-::PROTOBUF_NAMESPACE_ID::Metadata FriendCheckRequest::GetMetadata() const {
-  return ::_pbi::AssignDescriptors(
-      &descriptor_table_user_2eproto_getter, &descriptor_table_user_2eproto_once,
-      file_level_metadata_user_2eproto[18]);
-}
-
-// ===================================================================
-
-class FriendCheckResponse::_Internal {
- public:
-};
-
-FriendCheckResponse::FriendCheckResponse(::PROTOBUF_NAMESPACE_ID::Arena* arena,
-                         bool is_message_owned)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena, is_message_owned) {
-  SharedCtor(arena, is_message_owned);
-  // @@protoc_insertion_point(arena_constructor:protocol.user.FriendCheckResponse)
-}
-FriendCheckResponse::FriendCheckResponse(const FriendCheckResponse& from)
-  : ::PROTOBUF_NAMESPACE_ID::Message() {
-  FriendCheckResponse* const _this = this; (void)_this;
-  new (&_impl_) Impl_{
-      decltype(_impl_.nickname_){}
-    , decltype(_impl_.err_){}
-    , decltype(_impl_.is_friend_){}
-    , /*decltype(_impl_._cached_size_)*/{}};
-
-  _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-  _impl_.nickname_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.nickname_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-  if (!from._internal_nickname().empty()) {
-    _this->_impl_.nickname_.Set(from._internal_nickname(), 
-      _this->GetArenaForAllocation());
-  }
-  ::memcpy(&_impl_.err_, &from._impl_.err_,
-    static_cast<size_t>(reinterpret_cast<char*>(&_impl_.is_friend_) -
-    reinterpret_cast<char*>(&_impl_.err_)) + sizeof(_impl_.is_friend_));
-  // @@protoc_insertion_point(copy_constructor:protocol.user.FriendCheckResponse)
-}
-
-inline void FriendCheckResponse::SharedCtor(
-    ::_pb::Arena* arena, bool is_message_owned) {
-  (void)arena;
-  (void)is_message_owned;
-  new (&_impl_) Impl_{
-      decltype(_impl_.nickname_){}
-    , decltype(_impl_.err_){0}
-    , decltype(_impl_.is_friend_){false}
-    , /*decltype(_impl_._cached_size_)*/{}
-  };
-  _impl_.nickname_.InitDefault();
-  #ifdef PROTOBUF_FORCE_COPY_DEFAULT_STRING
-    _impl_.nickname_.Set("", GetArenaForAllocation());
-  #endif // PROTOBUF_FORCE_COPY_DEFAULT_STRING
-}
-
-FriendCheckResponse::~FriendCheckResponse() {
-  // @@protoc_insertion_point(destructor:protocol.user.FriendCheckResponse)
-  if (auto *arena = _internal_metadata_.DeleteReturnArena<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>()) {
-  (void)arena;
-    return;
-  }
-  SharedDtor();
-}
-
-inline void FriendCheckResponse::SharedDtor() {
-  GOOGLE_DCHECK(GetArenaForAllocation() == nullptr);
-  _impl_.nickname_.Destroy();
-}
-
-void FriendCheckResponse::SetCachedSize(int size) const {
-  _impl_._cached_size_.Set(size);
-}
-
-void FriendCheckResponse::Clear() {
-// @@protoc_insertion_point(message_clear_start:protocol.user.FriendCheckResponse)
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  _impl_.nickname_.ClearToEmpty();
-  ::memset(&_impl_.err_, 0, static_cast<size_t>(
-      reinterpret_cast<char*>(&_impl_.is_friend_) -
-      reinterpret_cast<char*>(&_impl_.err_)) + sizeof(_impl_.is_friend_));
-  _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
-}
-
-const char* FriendCheckResponse::_InternalParse(const char* ptr, ::_pbi::ParseContext* ctx) {
-#define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
-  while (!ctx->Done(&ptr)) {
-    uint32_t tag;
-    ptr = ::_pbi::ReadTag(ptr, &tag);
-    switch (tag >> 3) {
-      // .protocol.user.ErrCode err = 1;
-      case 1:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 8)) {
-          uint64_t val = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
-          CHK_(ptr);
-          _internal_set_err(static_cast<::protocol::user::ErrCode>(val));
-        } else
-          goto handle_unusual;
-        continue;
-      // bool is_friend = 2;
-      case 2:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 16)) {
-          _impl_.is_friend_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint64(&ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // string nickname = 3;
-      case 3:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 26)) {
-          auto str = _internal_mutable_nickname();
-          ptr = ::_pbi::InlineGreedyStringParser(str, ptr, ctx);
-          CHK_(ptr);
-          CHK_(::_pbi::VerifyUTF8(str, "protocol.user.FriendCheckResponse.nickname"));
-        } else
-          goto handle_unusual;
-        continue;
-      default:
-        goto handle_unusual;
-    }  // switch
-  handle_unusual:
-    if ((tag == 0) || ((tag & 7) == 4)) {
-      CHK_(ptr);
-      ctx->SetLastTag(tag);
-      goto message_done;
-    }
-    ptr = UnknownFieldParse(
-        tag,
-        _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(),
-        ptr, ctx);
-    CHK_(ptr != nullptr);
-  }  // while
-message_done:
-  return ptr;
-failure:
-  ptr = nullptr;
-  goto message_done;
-#undef CHK_
-}
-
-uint8_t* FriendCheckResponse::_InternalSerialize(
-    uint8_t* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:protocol.user.FriendCheckResponse)
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  // .protocol.user.ErrCode err = 1;
-  if (this->_internal_err() != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteEnumToArray(
-      1, this->_internal_err(), target);
-  }
-
-  // bool is_friend = 2;
-  if (this->_internal_is_friend() != 0) {
-    target = stream->EnsureSpace(target);
-    target = ::_pbi::WireFormatLite::WriteBoolToArray(2, this->_internal_is_friend(), target);
-  }
-
-  // string nickname = 3;
-  if (!this->_internal_nickname().empty()) {
-    ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::VerifyUtf8String(
-      this->_internal_nickname().data(), static_cast<int>(this->_internal_nickname().length()),
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::SERIALIZE,
-      "protocol.user.FriendCheckResponse.nickname");
-    target = stream->WriteStringMaybeAliased(
-        3, this->_internal_nickname(), target);
-  }
-
-  if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
-    target = ::_pbi::WireFormat::InternalSerializeUnknownFieldsToArray(
-        _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
-  }
-  // @@protoc_insertion_point(serialize_to_array_end:protocol.user.FriendCheckResponse)
-  return target;
-}
-
-size_t FriendCheckResponse::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:protocol.user.FriendCheckResponse)
-  size_t total_size = 0;
-
-  uint32_t cached_has_bits = 0;
-  // Prevent compiler warnings about cached_has_bits being unused
-  (void) cached_has_bits;
-
-  // string nickname = 3;
-  if (!this->_internal_nickname().empty()) {
-    total_size += 1 +
-      ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
-        this->_internal_nickname());
-  }
-
-  // .protocol.user.ErrCode err = 1;
-  if (this->_internal_err() != 0) {
-    total_size += 1 +
-      ::_pbi::WireFormatLite::EnumSize(this->_internal_err());
-  }
-
-  // bool is_friend = 2;
-  if (this->_internal_is_friend() != 0) {
-    total_size += 1 + 1;
-  }
-
-  return MaybeComputeUnknownFieldsSize(total_size, &_impl_._cached_size_);
-}
-
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData FriendCheckResponse::_class_data_ = {
-    ::PROTOBUF_NAMESPACE_ID::Message::CopyWithSourceCheck,
-    FriendCheckResponse::MergeImpl
-};
-const ::PROTOBUF_NAMESPACE_ID::Message::ClassData*FriendCheckResponse::GetClassData() const { return &_class_data_; }
-
-
-void FriendCheckResponse::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PROTOBUF_NAMESPACE_ID::Message& from_msg) {
-  auto* const _this = static_cast<FriendCheckResponse*>(&to_msg);
-  auto& from = static_cast<const FriendCheckResponse&>(from_msg);
-  // @@protoc_insertion_point(class_specific_merge_from_start:protocol.user.FriendCheckResponse)
-  GOOGLE_DCHECK_NE(&from, _this);
-  uint32_t cached_has_bits = 0;
-  (void) cached_has_bits;
-
-  if (!from._internal_nickname().empty()) {
-    _this->_internal_set_nickname(from._internal_nickname());
-  }
-  if (from._internal_err() != 0) {
-    _this->_internal_set_err(from._internal_err());
-  }
-  if (from._internal_is_friend() != 0) {
-    _this->_internal_set_is_friend(from._internal_is_friend());
-  }
-  _this->_internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
-}
-
-void FriendCheckResponse::CopyFrom(const FriendCheckResponse& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:protocol.user.FriendCheckResponse)
-  if (&from == this) return;
-  Clear();
-  MergeFrom(from);
-}
-
-bool FriendCheckResponse::IsInitialized() const {
-  return true;
-}
-
-void FriendCheckResponse::InternalSwap(FriendCheckResponse* other) {
-  using std::swap;
-  auto* lhs_arena = GetArenaForAllocation();
-  auto* rhs_arena = other->GetArenaForAllocation();
-  _internal_metadata_.InternalSwap(&other->_internal_metadata_);
-  ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr::InternalSwap(
-      &_impl_.nickname_, lhs_arena,
-      &other->_impl_.nickname_, rhs_arena
-  );
-  ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(FriendCheckResponse, _impl_.is_friend_)
-      + sizeof(FriendCheckResponse::_impl_.is_friend_)
-      - PROTOBUF_FIELD_OFFSET(FriendCheckResponse, _impl_.err_)>(
-          reinterpret_cast<char*>(&_impl_.err_),
-          reinterpret_cast<char*>(&other->_impl_.err_));
-}
-
-::PROTOBUF_NAMESPACE_ID::Metadata FriendCheckResponse::GetMetadata() const {
-  return ::_pbi::AssignDescriptors(
-      &descriptor_table_user_2eproto_getter, &descriptor_table_user_2eproto_once,
-      file_level_metadata_user_2eproto[19]);
+      file_level_metadata_user_2eproto[20]);
 }
 
 // ===================================================================
@@ -4976,7 +5072,7 @@ void FriendBlockRequest::InternalSwap(FriendBlockRequest* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata FriendBlockRequest::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_user_2eproto_getter, &descriptor_table_user_2eproto_once,
-      file_level_metadata_user_2eproto[20]);
+      file_level_metadata_user_2eproto[21]);
 }
 
 // ===================================================================
@@ -5157,7 +5253,7 @@ void FriendBlockResponse::InternalSwap(FriendBlockResponse* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata FriendBlockResponse::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_user_2eproto_getter, &descriptor_table_user_2eproto_once,
-      file_level_metadata_user_2eproto[21]);
+      file_level_metadata_user_2eproto[22]);
 }
 
 // ===================================================================
@@ -5360,7 +5456,7 @@ void SystemNotify::InternalSwap(SystemNotify* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata SystemNotify::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_user_2eproto_getter, &descriptor_table_user_2eproto_once,
-      file_level_metadata_user_2eproto[22]);
+      file_level_metadata_user_2eproto[23]);
 }
 
 // ===================================================================
@@ -5571,7 +5667,7 @@ void UserStatusNotify::InternalSwap(UserStatusNotify* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata UserStatusNotify::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_user_2eproto_getter, &descriptor_table_user_2eproto_once,
-      file_level_metadata_user_2eproto[23]);
+      file_level_metadata_user_2eproto[24]);
 }
 
 // ===================================================================
@@ -5594,12 +5690,12 @@ class UserPacket::_Internal {
   static const ::protocol::user::FriendPendingListResponse& friend_pending_list_resp(const UserPacket* msg);
   static const ::protocol::user::FriendDelRequest& friend_del_req(const UserPacket* msg);
   static const ::protocol::user::FriendDelResponse& friend_del_resp(const UserPacket* msg);
-  static const ::protocol::user::FriendCheckRequest& friend_check_req(const UserPacket* msg);
-  static const ::protocol::user::FriendCheckResponse& friend_check_resp(const UserPacket* msg);
   static const ::protocol::user::FriendBlockRequest& friend_block_req(const UserPacket* msg);
   static const ::protocol::user::FriendBlockResponse& friend_block_resp(const UserPacket* msg);
   static const ::protocol::user::SystemNotify& system_notify(const UserPacket* msg);
   static const ::protocol::user::UserStatusNotify& user_status_notify(const UserPacket* msg);
+  static const ::protocol::user::FriendListRequest& friend_list_req(const UserPacket* msg);
+  static const ::protocol::user::FriendListResponse& friend_list_resp(const UserPacket* msg);
 };
 
 const ::protocol::user::RegisterRequest&
@@ -5666,14 +5762,6 @@ const ::protocol::user::FriendDelResponse&
 UserPacket::_Internal::friend_del_resp(const UserPacket* msg) {
   return *msg->_impl_.body_.friend_del_resp_;
 }
-const ::protocol::user::FriendCheckRequest&
-UserPacket::_Internal::friend_check_req(const UserPacket* msg) {
-  return *msg->_impl_.body_.friend_check_req_;
-}
-const ::protocol::user::FriendCheckResponse&
-UserPacket::_Internal::friend_check_resp(const UserPacket* msg) {
-  return *msg->_impl_.body_.friend_check_resp_;
-}
 const ::protocol::user::FriendBlockRequest&
 UserPacket::_Internal::friend_block_req(const UserPacket* msg) {
   return *msg->_impl_.body_.friend_block_req_;
@@ -5689,6 +5777,14 @@ UserPacket::_Internal::system_notify(const UserPacket* msg) {
 const ::protocol::user::UserStatusNotify&
 UserPacket::_Internal::user_status_notify(const UserPacket* msg) {
   return *msg->_impl_.body_.user_status_notify_;
+}
+const ::protocol::user::FriendListRequest&
+UserPacket::_Internal::friend_list_req(const UserPacket* msg) {
+  return *msg->_impl_.body_.friend_list_req_;
+}
+const ::protocol::user::FriendListResponse&
+UserPacket::_Internal::friend_list_resp(const UserPacket* msg) {
+  return *msg->_impl_.body_.friend_list_resp_;
 }
 void UserPacket::set_allocated_register_req(::protocol::user::RegisterRequest* register_req) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
@@ -5930,36 +6026,6 @@ void UserPacket::set_allocated_friend_del_resp(::protocol::user::FriendDelRespon
   }
   // @@protoc_insertion_point(field_set_allocated:protocol.user.UserPacket.friend_del_resp)
 }
-void UserPacket::set_allocated_friend_check_req(::protocol::user::FriendCheckRequest* friend_check_req) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  clear_body();
-  if (friend_check_req) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(friend_check_req);
-    if (message_arena != submessage_arena) {
-      friend_check_req = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, friend_check_req, submessage_arena);
-    }
-    set_has_friend_check_req();
-    _impl_.body_.friend_check_req_ = friend_check_req;
-  }
-  // @@protoc_insertion_point(field_set_allocated:protocol.user.UserPacket.friend_check_req)
-}
-void UserPacket::set_allocated_friend_check_resp(::protocol::user::FriendCheckResponse* friend_check_resp) {
-  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
-  clear_body();
-  if (friend_check_resp) {
-    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
-      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(friend_check_resp);
-    if (message_arena != submessage_arena) {
-      friend_check_resp = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
-          message_arena, friend_check_resp, submessage_arena);
-    }
-    set_has_friend_check_resp();
-    _impl_.body_.friend_check_resp_ = friend_check_resp;
-  }
-  // @@protoc_insertion_point(field_set_allocated:protocol.user.UserPacket.friend_check_resp)
-}
 void UserPacket::set_allocated_friend_block_req(::protocol::user::FriendBlockRequest* friend_block_req) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
   clear_body();
@@ -6019,6 +6085,36 @@ void UserPacket::set_allocated_user_status_notify(::protocol::user::UserStatusNo
     _impl_.body_.user_status_notify_ = user_status_notify;
   }
   // @@protoc_insertion_point(field_set_allocated:protocol.user.UserPacket.user_status_notify)
+}
+void UserPacket::set_allocated_friend_list_req(::protocol::user::FriendListRequest* friend_list_req) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_body();
+  if (friend_list_req) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(friend_list_req);
+    if (message_arena != submessage_arena) {
+      friend_list_req = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, friend_list_req, submessage_arena);
+    }
+    set_has_friend_list_req();
+    _impl_.body_.friend_list_req_ = friend_list_req;
+  }
+  // @@protoc_insertion_point(field_set_allocated:protocol.user.UserPacket.friend_list_req)
+}
+void UserPacket::set_allocated_friend_list_resp(::protocol::user::FriendListResponse* friend_list_resp) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArenaForAllocation();
+  clear_body();
+  if (friend_list_resp) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::InternalGetOwningArena(friend_list_resp);
+    if (message_arena != submessage_arena) {
+      friend_list_resp = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, friend_list_resp, submessage_arena);
+    }
+    set_has_friend_list_resp();
+    _impl_.body_.friend_list_resp_ = friend_list_resp;
+  }
+  // @@protoc_insertion_point(field_set_allocated:protocol.user.UserPacket.friend_list_resp)
 }
 UserPacket::UserPacket(::PROTOBUF_NAMESPACE_ID::Arena* arena,
                          bool is_message_owned)
@@ -6117,16 +6213,6 @@ UserPacket::UserPacket(const UserPacket& from)
           from._internal_friend_del_resp());
       break;
     }
-    case kFriendCheckReq: {
-      _this->_internal_mutable_friend_check_req()->::protocol::user::FriendCheckRequest::MergeFrom(
-          from._internal_friend_check_req());
-      break;
-    }
-    case kFriendCheckResp: {
-      _this->_internal_mutable_friend_check_resp()->::protocol::user::FriendCheckResponse::MergeFrom(
-          from._internal_friend_check_resp());
-      break;
-    }
     case kFriendBlockReq: {
       _this->_internal_mutable_friend_block_req()->::protocol::user::FriendBlockRequest::MergeFrom(
           from._internal_friend_block_req());
@@ -6145,6 +6231,16 @@ UserPacket::UserPacket(const UserPacket& from)
     case kUserStatusNotify: {
       _this->_internal_mutable_user_status_notify()->::protocol::user::UserStatusNotify::MergeFrom(
           from._internal_user_status_notify());
+      break;
+    }
+    case kFriendListReq: {
+      _this->_internal_mutable_friend_list_req()->::protocol::user::FriendListRequest::MergeFrom(
+          from._internal_friend_list_req());
+      break;
+    }
+    case kFriendListResp: {
+      _this->_internal_mutable_friend_list_resp()->::protocol::user::FriendListResponse::MergeFrom(
+          from._internal_friend_list_resp());
       break;
     }
     case BODY_NOT_SET: {
@@ -6285,18 +6381,6 @@ void UserPacket::clear_body() {
       }
       break;
     }
-    case kFriendCheckReq: {
-      if (GetArenaForAllocation() == nullptr) {
-        delete _impl_.body_.friend_check_req_;
-      }
-      break;
-    }
-    case kFriendCheckResp: {
-      if (GetArenaForAllocation() == nullptr) {
-        delete _impl_.body_.friend_check_resp_;
-      }
-      break;
-    }
     case kFriendBlockReq: {
       if (GetArenaForAllocation() == nullptr) {
         delete _impl_.body_.friend_block_req_;
@@ -6318,6 +6402,18 @@ void UserPacket::clear_body() {
     case kUserStatusNotify: {
       if (GetArenaForAllocation() == nullptr) {
         delete _impl_.body_.user_status_notify_;
+      }
+      break;
+    }
+    case kFriendListReq: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete _impl_.body_.friend_list_req_;
+      }
+      break;
+    }
+    case kFriendListResp: {
+      if (GetArenaForAllocation() == nullptr) {
+        delete _impl_.body_.friend_list_resp_;
       }
       break;
     }
@@ -6473,22 +6569,6 @@ const char* UserPacket::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
         } else
           goto handle_unusual;
         continue;
-      // .protocol.user.FriendCheckRequest friend_check_req = 17;
-      case 17:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 138)) {
-          ptr = ctx->ParseMessage(_internal_mutable_friend_check_req(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
-      // .protocol.user.FriendCheckResponse friend_check_resp = 18;
-      case 18:
-        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 146)) {
-          ptr = ctx->ParseMessage(_internal_mutable_friend_check_resp(), ptr);
-          CHK_(ptr);
-        } else
-          goto handle_unusual;
-        continue;
       // .protocol.user.FriendBlockRequest friend_block_req = 19;
       case 19:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 154)) {
@@ -6517,6 +6597,22 @@ const char* UserPacket::_InternalParse(const char* ptr, ::_pbi::ParseContext* ct
       case 22:
         if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 178)) {
           ptr = ctx->ParseMessage(_internal_mutable_user_status_notify(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .protocol.user.FriendListRequest friend_list_req = 23;
+      case 23:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 186)) {
+          ptr = ctx->ParseMessage(_internal_mutable_friend_list_req(), ptr);
+          CHK_(ptr);
+        } else
+          goto handle_unusual;
+        continue;
+      // .protocol.user.FriendListResponse friend_list_resp = 24;
+      case 24:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<uint8_t>(tag) == 194)) {
+          ptr = ctx->ParseMessage(_internal_mutable_friend_list_resp(), ptr);
           CHK_(ptr);
         } else
           goto handle_unusual;
@@ -6662,20 +6758,6 @@ uint8_t* UserPacket::_InternalSerialize(
         _Internal::friend_del_resp(this).GetCachedSize(), target, stream);
   }
 
-  // .protocol.user.FriendCheckRequest friend_check_req = 17;
-  if (_internal_has_friend_check_req()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(17, _Internal::friend_check_req(this),
-        _Internal::friend_check_req(this).GetCachedSize(), target, stream);
-  }
-
-  // .protocol.user.FriendCheckResponse friend_check_resp = 18;
-  if (_internal_has_friend_check_resp()) {
-    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
-      InternalWriteMessage(18, _Internal::friend_check_resp(this),
-        _Internal::friend_check_resp(this).GetCachedSize(), target, stream);
-  }
-
   // .protocol.user.FriendBlockRequest friend_block_req = 19;
   if (_internal_has_friend_block_req()) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
@@ -6702,6 +6784,20 @@ uint8_t* UserPacket::_InternalSerialize(
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
       InternalWriteMessage(22, _Internal::user_status_notify(this),
         _Internal::user_status_notify(this).GetCachedSize(), target, stream);
+  }
+
+  // .protocol.user.FriendListRequest friend_list_req = 23;
+  if (_internal_has_friend_list_req()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(23, _Internal::friend_list_req(this),
+        _Internal::friend_list_req(this).GetCachedSize(), target, stream);
+  }
+
+  // .protocol.user.FriendListResponse friend_list_resp = 24;
+  if (_internal_has_friend_list_resp()) {
+    target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+      InternalWriteMessage(24, _Internal::friend_list_resp(this),
+        _Internal::friend_list_resp(this).GetCachedSize(), target, stream);
   }
 
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -6833,20 +6929,6 @@ size_t UserPacket::ByteSizeLong() const {
           *_impl_.body_.friend_del_resp_);
       break;
     }
-    // .protocol.user.FriendCheckRequest friend_check_req = 17;
-    case kFriendCheckReq: {
-      total_size += 2 +
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *_impl_.body_.friend_check_req_);
-      break;
-    }
-    // .protocol.user.FriendCheckResponse friend_check_resp = 18;
-    case kFriendCheckResp: {
-      total_size += 2 +
-        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
-          *_impl_.body_.friend_check_resp_);
-      break;
-    }
     // .protocol.user.FriendBlockRequest friend_block_req = 19;
     case kFriendBlockReq: {
       total_size += 2 +
@@ -6873,6 +6955,20 @@ size_t UserPacket::ByteSizeLong() const {
       total_size += 2 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
           *_impl_.body_.user_status_notify_);
+      break;
+    }
+    // .protocol.user.FriendListRequest friend_list_req = 23;
+    case kFriendListReq: {
+      total_size += 2 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *_impl_.body_.friend_list_req_);
+      break;
+    }
+    // .protocol.user.FriendListResponse friend_list_resp = 24;
+    case kFriendListResp: {
+      total_size += 2 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *_impl_.body_.friend_list_resp_);
       break;
     }
     case BODY_NOT_SET: {
@@ -6978,16 +7074,6 @@ void UserPacket::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PRO
           from._internal_friend_del_resp());
       break;
     }
-    case kFriendCheckReq: {
-      _this->_internal_mutable_friend_check_req()->::protocol::user::FriendCheckRequest::MergeFrom(
-          from._internal_friend_check_req());
-      break;
-    }
-    case kFriendCheckResp: {
-      _this->_internal_mutable_friend_check_resp()->::protocol::user::FriendCheckResponse::MergeFrom(
-          from._internal_friend_check_resp());
-      break;
-    }
     case kFriendBlockReq: {
       _this->_internal_mutable_friend_block_req()->::protocol::user::FriendBlockRequest::MergeFrom(
           from._internal_friend_block_req());
@@ -7006,6 +7092,16 @@ void UserPacket::MergeImpl(::PROTOBUF_NAMESPACE_ID::Message& to_msg, const ::PRO
     case kUserStatusNotify: {
       _this->_internal_mutable_user_status_notify()->::protocol::user::UserStatusNotify::MergeFrom(
           from._internal_user_status_notify());
+      break;
+    }
+    case kFriendListReq: {
+      _this->_internal_mutable_friend_list_req()->::protocol::user::FriendListRequest::MergeFrom(
+          from._internal_friend_list_req());
+      break;
+    }
+    case kFriendListResp: {
+      _this->_internal_mutable_friend_list_resp()->::protocol::user::FriendListResponse::MergeFrom(
+          from._internal_friend_list_resp());
       break;
     }
     case BODY_NOT_SET: {
@@ -7036,7 +7132,7 @@ void UserPacket::InternalSwap(UserPacket* other) {
 ::PROTOBUF_NAMESPACE_ID::Metadata UserPacket::GetMetadata() const {
   return ::_pbi::AssignDescriptors(
       &descriptor_table_user_2eproto_getter, &descriptor_table_user_2eproto_once,
-      file_level_metadata_user_2eproto[24]);
+      file_level_metadata_user_2eproto[25]);
 }
 
 // @@protoc_insertion_point(namespace_scope)
@@ -7107,6 +7203,18 @@ template<> PROTOBUF_NOINLINE ::protocol::user::FriendPendingListResponse*
 Arena::CreateMaybeMessage< ::protocol::user::FriendPendingListResponse >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protocol::user::FriendPendingListResponse >(arena);
 }
+template<> PROTOBUF_NOINLINE ::protocol::user::FriendListRequest*
+Arena::CreateMaybeMessage< ::protocol::user::FriendListRequest >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protocol::user::FriendListRequest >(arena);
+}
+template<> PROTOBUF_NOINLINE ::protocol::user::FriendListItem*
+Arena::CreateMaybeMessage< ::protocol::user::FriendListItem >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protocol::user::FriendListItem >(arena);
+}
+template<> PROTOBUF_NOINLINE ::protocol::user::FriendListResponse*
+Arena::CreateMaybeMessage< ::protocol::user::FriendListResponse >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::protocol::user::FriendListResponse >(arena);
+}
 template<> PROTOBUF_NOINLINE ::protocol::user::FriendDelRequest*
 Arena::CreateMaybeMessage< ::protocol::user::FriendDelRequest >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protocol::user::FriendDelRequest >(arena);
@@ -7114,14 +7222,6 @@ Arena::CreateMaybeMessage< ::protocol::user::FriendDelRequest >(Arena* arena) {
 template<> PROTOBUF_NOINLINE ::protocol::user::FriendDelResponse*
 Arena::CreateMaybeMessage< ::protocol::user::FriendDelResponse >(Arena* arena) {
   return Arena::CreateMessageInternal< ::protocol::user::FriendDelResponse >(arena);
-}
-template<> PROTOBUF_NOINLINE ::protocol::user::FriendCheckRequest*
-Arena::CreateMaybeMessage< ::protocol::user::FriendCheckRequest >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::protocol::user::FriendCheckRequest >(arena);
-}
-template<> PROTOBUF_NOINLINE ::protocol::user::FriendCheckResponse*
-Arena::CreateMaybeMessage< ::protocol::user::FriendCheckResponse >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::protocol::user::FriendCheckResponse >(arena);
 }
 template<> PROTOBUF_NOINLINE ::protocol::user::FriendBlockRequest*
 Arena::CreateMaybeMessage< ::protocol::user::FriendBlockRequest >(Arena* arena) {

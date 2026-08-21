@@ -12,6 +12,12 @@ const uint32_t MAX_BODY_LEN  = 16 * 1024 * 1024;  // body 最大 16MB
 const uint32_t MAX_NICK_LEN  = 64;
 const uint32_t MAX_MSG_LEN   = 4096;  // 单条消息最大长度
 
+// 文件域单片数据最大字节数。
+// 原受收发缓冲区(各 8KB)约束; 现缓冲区已改为按需自动增长(见 connection.hpp),
+// 单片仅受 MAX_BODY_LEN 约束。取 1MB: 大文件下每片 1MB, 兼顾吞吐与内存。
+// server 与 client 共用同一值, 改动需同步两侧(见 file.proto 说明)。
+const uint32_t FILE_CHUNK_SIZE = 1024 * 1024;
+
 // 魔数，用于校验协议合法性
 const uint16_t MAGIC_NUM = 0x9230;
 
@@ -27,6 +33,7 @@ enum Domain : uint8_t {
     DOMAIN_USER  = 1,
     DOMAIN_CHAT  = 2,
     DOMAIN_GROUP = 3,   // 群域: body 为 protocol.group.GroupPacket(oneof)
+    DOMAIN_FILE  = 4,   // 文件域: body 为 protocol.file.FilePacket(oneof)
 };
 
 #pragma pack(1)

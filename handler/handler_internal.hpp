@@ -8,6 +8,7 @@
 #include "../protocol/user/user.pb.h"
 #include "../protocol/chat/chat.pb.h"
 #include "../protocol/group/group.pb.h"
+#include "../protocol/file/file.pb.h"
 #include "handler.hpp"
 
 // ============================================================
@@ -37,6 +38,9 @@ std::vector<char> chat_packet(const protocol::chat::ChatPacket& pkt);
 /// 组一个 group 域响应包
 std::vector<char> group_packet(const protocol::group::GroupPacket& pkt);
 
+/// 组一个 file 域响应包
+std::vector<char> file_packet(const protocol::file::FilePacket& pkt);
+
 /// user 域 oneof 分发器(user_handler.cpp)
 TaskResult on_user_packet(const Task&, const char* body, std::size_t body_len);
 
@@ -45,6 +49,9 @@ TaskResult on_chat_packet(const Task&, const char* body, std::size_t body_len);
 
 /// group 域 oneof 分发器(group_handler.cpp)
 TaskResult on_group_packet(const Task&, const char* body, std::size_t body_len);
+
+/// file 域 oneof 分发器(file_handler.cpp)
+TaskResult on_file_packet(const Task&, const char* body, std::size_t body_len);
 
 }  // namespace detail
 }  // namespace handler

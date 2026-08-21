@@ -59,9 +59,9 @@ int friend_pending_list(Db&, uint32_t user_id,
 // 与自身的好友关系不可删除(注册时自动建立), 自引用删除返回 ERR_INVALID_PARAM。
 int friend_del(Db&, uint32_t user_id, uint32_t friend_id);
 
-// 查询是否好友(任一方向 accepted)。is_friend 输出结果, nickname 输出好友昵称。
-int friend_check(Db&, uint32_t user_id, uint32_t friend_id,
-                 bool& is_friend, std::string& nickname);
+// 好友列表: 返回所有已接受(status=1)好友的 user_id/nickname/online(不含自好友)。
+int friend_list(Db&, uint32_t user_id,
+                std::vector<protocol::user::FriendListItem>& out);
 
 // 拉黑 / 取消拉黑。只操作独立的 blocks 表, 不改动 friends 好友状态;
 // 拉黑仅作消息发送闸门。拉黑(block=true)插入 blocker_id→blockee_id 记录,

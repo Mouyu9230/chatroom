@@ -3,3 +3,14 @@
 # 自签名 TLS 证书(由 gen_cert.sh 生成, 不入库)
 /server.crt
 /server.key
+# 文件传输运行时存储: 目录本身入库(含 .gitkeep, 使空目录可被克隆),
+# 仅忽略内部运行时文件(cs 传输产生的文件)
+/server/files/*
+!/server/files/.gitkeep
+/client/files/*
+!/client/files/cli_send/
+!/client/files/cli_recv/
+/client/files/cli_send/*
+!/client/files/cli_send/.gitkeep
+/client/files/cli_recv/*
+!/client/files/cli_recv/.gitkeep

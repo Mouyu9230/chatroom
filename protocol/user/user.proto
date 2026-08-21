@@ -105,7 +105,7 @@ message HeartbeatResp {}
 //
 //  流程: A 向 B 发起申请 → B 拉取待处理列表 → B 向 A 手动发送
 //  一条聊天消息即视为接受 (服务器侧据此建立好友关系)。
-//  不区分申请中的状态, FriendCheck 只回答"是否为好友"。
+//  好友列表(FriendListRequest)列出已建立的好友关系(含在线状态)。
 //  重复申请命中 ERR_REQUEST_PENDING。
 // ------------------------------------------------------------
 
@@ -135,6 +135,20 @@ message FriendPendingListResponse {
   ErrCode err                    = 2;   // 错误码(与其它响应保持一致)
 }
 
+// 好友列表 (仿 group 域的 GroupListRequest: 列出所有已建立的好友关系)
+message FriendListRequest {}
+
+message FriendListItem {
+  uint32   user_id  = 1;
+  string   nickname = 2;
+  bool     online   = 3;   // 在线状态
+}
+
+message FriendListResponse {
+  ErrCode                    err     = 1;
+  repeated FriendListItem    friends = 2;
+}
+
 // 删除好友
 message FriendDelRequest {
   uint32 friend_id = 1;
@@ -142,17 +156,6 @@ message FriendDelRequest {
 
 message FriendDelResponse {
   ErrCode err = 1;
-}
-
-// 查询是否好友
-message FriendCheckRequest {
-  uint32 friend_id = 1;
-}
-
-message FriendCheckResponse {
-  ErrCode  err       = 1;
-  bool     is_friend = 2;
-  string   nickname  = 3;   // 好友的昵称
 }
 
 // 拉黑 / 取消拉黑
@@ -199,11 +202,11 @@ message UserPacket {
     FriendPendingListResponse friend_pending_list_resp = 14;
     FriendDelRequest    friend_del_req        = 15;
     FriendDelResponse   friend_del_resp       = 16;
-    FriendCheckRequest  friend_check_req      = 17;
-    FriendCheckResponse friend_check_resp     = 18;
     FriendBlockRequest  friend_block_req      = 19;
     FriendBlockResponse friend_block_resp     = 20;
     SystemNotify        system_notify         = 21;
     UserStatusNotify    user_status_notify    = 22;
+    FriendListRequest   friend_list_req       = 23;
+    FriendListResponse  friend_list_resp      = 24;
   }
 }

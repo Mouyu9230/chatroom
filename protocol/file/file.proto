@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+package protocol.file;
+
+import "user.proto";
+
+// ============================================================
+//  file.proto —— 文件域
+//
+//  定位: 聊天室内的文件传输, 收件箱模型:
+//    - 发送方 fsend: 上传到接收方收件箱 server_files/<to_id>/,
+//      完成后向接收方推送 FileNotify(离线则丢弃, 文件已落盘可 flist);
+//    - 接收方 fget: 下载自己收件箱里的文件, 支持断点续传。
+//
+//  传输通道: 复用现有单条 TLS 连接 + epoll 非阻塞模型, 不另开数据连接。
+//  受收发缓冲区(各 8KB)约束, 文件数据按 ≤4096 字节/片(FileChunk)传递,
+//  每片一次请求/响应(FileChunkAck): 串行发片天然有序、天然流控、天然续传。
+//  断点续传语义同 ftp_server 示例: STOR→FileSendReq(带续传起点 offset) /
+//  SIZE→FileStat / REST+RETR→FileGetReq(带 offset)。
+//
+//  兼容性约束同其它域: 字段号不可复用, 新增字段只能向后追加。
+// ============================================================
+
+// 文件元信息
+message FileMeta {
+  string name = 1;   // 文件名(basename, 清洗后)
+  uint64 size = 2;   // 字节数
+  uint64 ts   = 3;   // 服务端毫秒时间戳
+}
+
+// ------------------------------------------------------------
+//  文件列表 (LIST)
+// ------------------------------------------------------------
+message FileListRequest {
+  uint32 owner_id = 1;   // 查询谁的收件箱; 客户端填自己
+}
+
+message FileListResponse {
+  user.ErrCode        err   = 1;
+  repeated FileMeta   files = 2;
+}
+
+// ------------------------------------------------------------
+//  查询服务器侧文件大小 (SIZE, 供断点续传/人工查询)
+// ------------------------------------------------------------
+message FileStatRequest {
+  string name = 1;
+}
+
+message FileStatResponse {
+  user.ErrCode err  = 1;
+  uint64       size = 2;   // 文件不存在/出错时无意义
+}
+
+// ------------------------------------------------------------
+//  上传 (STOR + REST 续传起点)
+// ------------------------------------------------------------
+
+// 声明要写入接收方收件箱; 服务器返回已存字节数 offset, 客户端从此续传。
+message FileSendReq {
+  uint32 to_id = 1;   // 接收者 user_id
+  string name  = 2;   // 文件名(仅 basename)
+  uint64 size  = 3;   // 本地文件总字节数
+}
+
+message FileSendResp {
+  user.ErrCode err    = 1;
+  uint64       offset = 2;   // 服务器已存字节数(0 = 全新文件)
+}
+
+// 数据块, 每片 data ≤ 4096 字节
+message FileChunk {
+  uint64 offset = 1;   // 本片在文件内的写入位置
+  bytes  data   = 2;
+}
+
+message FileChunkAck {
+  user.ErrCode err    = 1;
+  uint64       offset = 2;   // 已写到的位置(offset + data.size())
+}
+
+// 上传完成
+message FileSendFinish {
+  string name = 1;
+}
+
+message FileSendAck {
+  user.ErrCode err  = 1;
+  uint64       size = 2;   // 服务器实际落盘字节数
+}
+
+// ------------------------------------------------------------
+//  下载 (RETR + REST)
+// ------------------------------------------------------------
+
+// 从 offset 开始取一片(续传时客户端把自己的已下载大小填进 offset)
+message FileGetReq {
+  string name   = 1;
+  uint64 offset = 2;
+}
+
+message FileGetResp {
+  user.ErrCode err    = 1;
+  bytes        data   = 2;   // 本片数据(offset >= total 时为空)
+  uint64       offset = 3;   // 本片起始位置
+  uint64       total  = 4;   // 服务器文件总字节数
+  bool         eof    = 5;   // 已读到文件末尾
+}
+
+// ------------------------------------------------------------
+//  新文件到达推送 (server -> client)
+// ------------------------------------------------------------
+message FileNotify {
+  uint32   from_id = 1;   // 发送方 user_id
+  FileMeta meta    = 2;
+}
+
+// ------------------------------------------------------------
+//  文件域信封 —— 统一本域消息的分派与反序列化
+// ------------------------------------------------------------
+message FilePacket {
+  oneof body {
+    FileListRequest   list_req    = 1;
+    FileListResponse  list_resp   = 2;
+    FileStatRequest   stat_req    = 3;
+    FileStatResponse  stat_resp   = 4;
+    FileSendReq       send_req    = 5;
+    FileSendResp      send_resp   = 6;
+    FileChunk         chunk       = 7;
+    FileChunkAck      chunk_ack   = 8;
+    FileSendFinish    send_finish = 9;
+    FileSendAck       send_ack    = 10;
+    FileGetReq        get_req     = 11;
+    FileGetResp       get_resp    = 12;
+    FileNotify        notify      = 13;
+  }
+}

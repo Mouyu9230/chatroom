@@ -88,17 +88,13 @@ int main() {
               pending[0].friend_id() == alice_id && pending[0].nickname() == "Alice",
           "bob pending list has alice");
 
-    bool is_friend = true;
-    std::string nick;
-    r = db::user::friend_check(db, alice_id, bob_id, is_friend, nick);
-    check(r == protocol::user::ERR_SUCCESS && !is_friend, "not friend before accept");
+    check(!db::user::friend_are_friends(db, alice_id, bob_id), "not friend before accept");
 
     // ---- accept by chat (bob sends chat to alice) ----
     bool accepted = db::user::friend_accept_by_chat(db, bob_id, alice_id);
     check(accepted, "bob->alice chat accepts alice's request");
 
-    r = db::user::friend_check(db, alice_id, bob_id, is_friend, nick);
-    check(r == protocol::user::ERR_SUCCESS && is_friend && nick == "Bob", "now is friend");
+    check(db::user::friend_are_friends(db, alice_id, bob_id), "now is friend");
 
     // ---- chat persistence ----
     uint64_t msg_id = 0, ts = 0;

@@ -89,6 +89,7 @@ int Socket::connect(const char* ip, int port) {
 
     if (::connect(fd_, (struct sockaddr*)&addr, sizeof(addr)) < 0) {
         perror("connect");
+        return -1;   // 修复: 之前无论成败都 return 0, 调用方无法识别连接失败
     }
 
     return 0;

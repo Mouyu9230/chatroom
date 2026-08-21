@@ -194,18 +194,21 @@ int friend_del(Db& db, uint32_t user_id, uint32_t friend_id) {
     return protocol::user::ERR_SUCCESS;
 }
 
-int friend_check(Db& db, uint32_t user_id, uint32_t friend_id,
-                 bool& is_friend, std::string& nickname) {
-    is_friend = false;
-    nickname.clear();
-    std::string sql = 
-        "SELECT u.nickname FROM friends f JOIN users u ON u.user_id = f.friend_id"
+int friend_list(Db& db, uint32_t user_id,
+                std::vector<protocol::user::FriendListItem>& out) {
+    out.clear();
+    std::string sql =
+        "SELECT u.user_id, u.nickname, u.online FROM friends f"
+        " JOIN users u ON u.user_id = f.friend_id"
         " WHERE f.user_id=" + std::to_string(user_id) +
-        " AND f.friend_id=" + std::to_string(friend_id) + " AND f.status=1";
+        " AND f.status=1 AND f.friend_id<>f.user_id ORDER BY f.friend_id";
     if (!db.query(sql, [&](const std::vector<std::string>& row) {
-            is_friend = true;
-            nickname  = row[0];
-            return false;
+            protocol::user::FriendListItem item;
+            item.set_user_id(static_cast<uint32_t>(std::strtoul(row[0].c_str(), nullptr, 10)));
+            item.set_nickname(row[1]);
+            item.set_online(row[2] == "1");
+            out.push_back(std::move(item));
+            return true;
         })) {
         return protocol::user::ERR_SYSTEM;
     }

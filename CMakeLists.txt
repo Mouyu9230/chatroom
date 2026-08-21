@@ -24,11 +24,12 @@ pkg_check_modules(MYSQL REQUIRED IMPORTED_TARGET mysqlclient)
 find_package(OpenSSL REQUIRED)
 
 # ---- 源码 ----
-# 预生成的 protobuf 文件(user/chat/group 域)
+# 预生成的 protobuf 文件(user/chat/group/file 域)
 set(PROTO_PB
     "protocol/user/user.pb.cc"
     "protocol/chat/chat.pb.cc"
     "protocol/group/group.pb.cc"
+    "protocol/file/file.pb.cc"
 )
 
 # 网络层公共模块(server / client 共用)
@@ -53,8 +54,9 @@ set(DATABASE_SOURCES
 
 set(COMMON_INCLUDES
     ${CMAKE_CURRENT_SOURCE_DIR}
-    ${CMAKE_CURRENT_SOURCE_DIR}/protocol/user   # chat.pb.h / group.pb.h 内 #include "user.pb.h"
+    ${CMAKE_CURRENT_SOURCE_DIR}/protocol/user   # chat.pb.h / group.pb.h / file.pb.h 内 #include "user.pb.h"
     ${CMAKE_CURRENT_SOURCE_DIR}/protocol/group
+    ${CMAKE_CURRENT_SOURCE_DIR}/protocol/file
     ${Protobuf_INCLUDE_DIRS}
 )
 
@@ -66,6 +68,7 @@ add_executable(server
     handler/user_handler.cpp     # user 域业务
     handler/chat_handler.cpp     # chat 域业务(1:1 + 群聊收发)
     handler/group_handler.cpp    # group 域业务
+    handler/file_handler.cpp     # file 域业务(文件传输/断点续传)
     ${NETWORK_SOURCES}
     ${DATABASE_SOURCES}
     ${PROTO_PB}

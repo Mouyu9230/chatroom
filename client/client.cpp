@@ -1,11 +1,17 @@
 #include "client.hpp"
 
 #include "../network/socket/socket.hpp"
+#include "../network/project_path.hpp"
 #include "../protocol/group/group.pb.h"
 
 #include <poll.h>
+#include <fcntl.h>
 #include <sys/socket.h>
+#include <sys/stat.h>
+#include <sys/types.h>
 #include <unistd.h>
+
+#include <algorithm>
 
 #include <openssl/err.h>
 #include <openssl/ssl.h>
@@ -16,6 +22,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <cstring>
+#include <csignal>
 #include <mutex>
 #include <queue>
 #include <thread>
@@ -111,10 +118,13 @@ bool send_exact(int fd, const char* data, size_t n) {
     size_t sent = 0;
     while (sent < n) {
         if (g_ssl != nullptr) {
+            // 单次 SSL_write 上限 64KB: 大于 socket 发送缓冲的整包写入会走 OpenSSL
+            // 内部缓冲 + WANT_WRITE 反复重试路径, 吞吐骤降(大文件分片 1MB 尤其明显)。
             int r;
             {
                 std::lock_guard<std::mutex> lk(g_ssl_mtx);
-                r = SSL_write(g_ssl, data + sent, (int)(n - sent));
+                int len = (int)std::min<size_t>(64 * 1024, n - sent);
+                r = SSL_write(g_ssl, data + sent, len);
             }
             if (r > 0) {
                 sent += static_cast<size_t>(r);
@@ -181,8 +191,8 @@ protocol::user::UserPacket::BodyCase expected_user_resp_case(const protocol::use
         case P::kLogoutReq:            return P::kLogoutResp;
         case P::kFriendRequestReq:     return P::kFriendRequestResp;
         case P::kFriendPendingListReq: return P::kFriendPendingListResp;
+        case P::kFriendListReq:        return P::kFriendListResp;
         case P::kFriendDelReq:         return P::kFriendDelResp;
-        case P::kFriendCheckReq:       return P::kFriendCheckResp;
         case P::kFriendBlockReq:       return P::kFriendBlockResp;
         case P::kCancelReq:            return P::kCancelResp;
         default:                       return P::BODY_NOT_SET;
@@ -283,6 +293,16 @@ void reader_loop(int fd) {
                     fflush(stdout);
                     continue;
                 }
+            }
+        } else if (hdr->type == protocol::DOMAIN_FILE) {
+            protocol::file::FilePacket fp;
+            if (fp.ParseFromArray(body, hdr->body_len) && fp.has_notify()) {
+                const auto& n = fp.notify();
+                fprintf(stdout, "\n[file<<] from=%u: %s (%llu bytes)\n",
+                        n.from_id(), n.meta().name().c_str(),
+                        static_cast<unsigned long long>(n.meta().size()));
+                fflush(stdout);
+                continue;   // 推送已打印, 不入队
             }
         }
 
@@ -438,6 +458,50 @@ bool group_request(int fd, protocol::group::GroupPacket& req, protocol::group::G
     }
 }
 
+protocol::file::FilePacket::BodyCase expected_file_resp_case(const protocol::file::FilePacket& req) {
+    using P = protocol::file::FilePacket;
+    switch (req.body_case()) {
+        case P::kListReq:      return P::kListResp;
+        case P::kStatReq:      return P::kStatResp;
+        case P::kSendReq:      return P::kSendResp;
+        case P::kChunk:        return P::kChunkAck;
+        case P::kSendFinish:   return P::kSendAck;
+        case P::kGetReq:       return P::kGetResp;
+        default:               return P::BODY_NOT_SET;
+    }
+}
+
+bool file_request(int fd, protocol::file::FilePacket& req, protocol::file::FilePacket& resp) {
+    std::vector<char> packet = build_packet(protocol::DOMAIN_FILE, req);
+    if (!send_exact(fd, packet.data(), packet.size())) {
+        fprintf(stderr, "[client] send failed\n");
+        return false;
+    }
+    protocol::file::FilePacket::BodyCase expect = expected_file_resp_case(req);
+    for (;;) {
+        std::vector<char> pkt = pop_packet();
+        if (pkt.empty()) {
+            fprintf(stderr, "[client] connection closed\n");
+            return false;
+        }
+        auto* hdr = reinterpret_cast<const protocol::packet_header*>(pkt.data());
+        if (hdr->type != protocol::DOMAIN_FILE) {
+            fprintf(stdout, "[client] <skip> non-file domain=%u\n", hdr->type);
+            continue;
+        }
+        protocol::file::FilePacket r;
+        if (!r.ParseFromArray(pkt.data() + sizeof(*hdr), hdr->body_len)) {
+            fprintf(stdout, "[client] <skip> bad file body\n");
+            continue;
+        }
+        if (r.body_case() == expect) {
+            resp = std::move(r);
+            return true;
+        }
+        fprintf(stdout, "[client] <skip> file case=%d\n", static_cast<int>(r.body_case()));
+    }
+}
+
 }  // namespace client
 
 // ------------------------------------------------------------
@@ -477,8 +541,8 @@ void print_help() {
             "  cancel   <username> <password>\n"
             "  friend req     <friend_id> [remark]\n"
             "  friend pending\n"
+            "  friend list\n"
             "  friend del     <friend_id>\n"
-            "  friend check   <friend_id>\n"
             "  friend block   <friend_id> [on|off]\n"
             "  chat     <to_id> <text>\n"
             "  history  <target_id> [limit]\n"
@@ -494,6 +558,10 @@ void print_help() {
             "  glist\n"
             "  gchat    <group_id> <text>\n"
             "  ghistory <group_id> [limit]\n"
+            "  fsend    <to_id> <filename>     upload client/files/cli_send/<filename> to <to_id>'s inbox (auto-resume)\n"
+            "  fget     <filename>             download <filename> to client/files/cli_recv/ (auto-resume)\n"
+            "  flist                          list files in my inbox\n"
+            "  fstat    <filename>             query server-side size of <filename>\n"
             "  help\n"
             "  quit / exit\n");
 }
@@ -513,9 +581,196 @@ bool send_logout(int fd, uint32_t uid) {
     return err == protocol::user::ERR_SUCCESS;
 }
 
+// 取 basename(与服务器 sanitize 规则对齐, 防本地路径穿越)
+std::string client_basename(const std::string& raw) {
+    std::string name = raw;
+    size_t pos = name.find_last_of('/');
+    if (pos != std::string::npos) name = name.substr(pos + 1);
+    pos = name.find_last_of('\\');
+    if (pos != std::string::npos) name = name.substr(pos + 1);
+    return name;
+}
+
+// 客户端本地文件目录: 上传从这里找文件 —— 由可执行文件位置解析到项目根下,
+// 不手动指定路径, 与启动时的工作目录无关(避免从非仓库根启动时 files 落到别处)。
+// 目录(cli_send/cli_recv)为仓库内已存在的目录, 代码不创建。
+// 解析后形如 <项目根>/client/files/cli_send。
+static std::string client_file_dir() {
+    static const std::string d = project_root() + "/client/files/cli_send";
+    return d;
+}
+// 下载目录: 与上传源目录(cli_send)分开。若共用同一目录, fget 会把同名的上传源文件误当成
+// 断点续传残片(直接跳过下载), 且下载会覆盖上传源 —— 单机双客户端测试必然踩中。
+// (仿 ftp_server 的 test_cli/ 上传 + cli_retr_* 下载分离思路) 形如 <项目根>/client/files/cli_recv。
+static std::string client_recv_dir() {
+    static const std::string d = project_root() + "/client/files/cli_recv";
+    return d;
+}
+
+// 上传 client/files/cli_send/<name> 到指定用户的收件箱。断点续传逻辑仿 ftp handle_stor:
+//   FileSendReq 返回服务器已存字节数 → 本地 lseek 到该偏移 → 逐片
+//   FileChunk(每片等 FileChunkAck) → FileSendFinish。
+// 中途失败返回 false, 已上传部分留在服务器, 重跑即可续传。
+bool upload_file(int fd, uint32_t to_id, const std::string& name_arg) {
+    std::string name = client_basename(name_arg);   // 只按文件名在固定目录里找
+    if (name.empty()) {
+        fprintf(stderr, "[fsend] empty filename\n");
+        return false;
+    }
+    std::string path = client_file_dir() + "/" + name;
+    int lfd = ::open(path.c_str(), O_RDONLY);
+    if (lfd < 0) {
+        fprintf(stderr, "[fsend] cannot open %s (put the file under %s/)\n",
+                path.c_str(), client_file_dir().c_str());
+        return false;
+    }
+    off_t local_size = ::lseek(lfd, 0, SEEK_END);
+    ::lseek(lfd, 0, SEEK_SET);
+
+    protocol::file::FilePacket req;
+    auto* sr = req.mutable_send_req();
+    sr->set_to_id(to_id);
+    sr->set_name(name);
+    sr->set_size(static_cast<uint64_t>(local_size));
+    protocol::file::FilePacket resp;
+    if (!client::file_request(fd, req, resp)) {
+        ::close(lfd);
+        return false;
+    }
+    const auto& rr = resp.send_resp();
+    if (rr.err() != protocol::user::ERR_SUCCESS) {
+        fprintf(stdout, "[fsend] err=%s(%d)\n", err_name(rr.err()), static_cast<int>(rr.err()));
+        ::close(lfd);
+        return false;
+    }
+    uint64_t offset = rr.offset();
+    if (offset > static_cast<uint64_t>(local_size)) offset = static_cast<uint64_t>(local_size);
+    ::lseek(lfd, static_cast<off_t>(offset), SEEK_SET);
+    fprintf(stdout, "[fsend] %s -> user %u, server offset=%llu (resume from here)\n",
+            name.c_str(), to_id, static_cast<unsigned long long>(offset));
+
+    std::vector<char> chunk_buf(protocol::FILE_CHUNK_SIZE);   // 堆上分片缓冲(单片 1MB)
+    bool ok = true;
+    while (offset < static_cast<uint64_t>(local_size)) {
+        ssize_t n = ::read(lfd, chunk_buf.data(), chunk_buf.size());
+        if (n <= 0) break;
+        protocol::file::FilePacket creq;
+        auto* c = creq.mutable_chunk();
+        c->set_offset(offset);
+        c->set_data(chunk_buf.data(), static_cast<size_t>(n));
+        protocol::file::FilePacket cresp;
+        if (!client::file_request(fd, creq, cresp)) { ok = false; break; }
+        if (cresp.chunk_ack().err() != protocol::user::ERR_SUCCESS) {;
+            fprintf(stderr, "[fsend] chunk ack err=%d\n",
+                    static_cast<int>(cresp.chunk_ack().err()));
+            ok = false;
+            break;
+        }
+        offset += static_cast<uint64_t>(n);
+    }
+    ::close(lfd);
+    if (!ok) {
+        fprintf(stderr, "[fsend] interrupted at offset %llu (re-run fsend to resume)\n",
+                static_cast<unsigned long long>(offset));
+        return false;
+    }
+
+    protocol::file::FilePacket freq;
+    freq.mutable_send_finish()->set_name(name);
+    protocol::file::FilePacket fresp;
+    if (!client::file_request(fd, freq, fresp)) return false;
+    const auto& ack = fresp.send_ack();
+    fprintf(stdout, "[fsend] done err=%s(%d) server_size=%llu\n",
+            err_name(ack.err()), static_cast<int>(ack.err()),
+            static_cast<unsigned long long>(ack.size()));
+    return ack.err() == protocol::user::ERR_SUCCESS;
+}
+
+// 从自己收件箱下载文件到 client/files/cli_recv/。断点续传逻辑仿 ftp handle_retr:
+//   本地已有部分取其大小作 offset → 逐片 FileGetReq → 追加写入 → eof 结束。
+bool download_file(int fd, const std::string& raw_name) {
+    std::string name = client_basename(raw_name);
+    if (name.empty()) {
+        fprintf(stderr, "[fget] empty filename\n");
+        return false;
+    }
+    std::string path = client_recv_dir() + "/" + name;
+
+    // 本地已有部分则取其大小作续传起点
+    uint64_t offset = 0;
+    int lfd = ::open(path.c_str(), O_RDONLY);
+    if (lfd >= 0) {
+        off_t sz = ::lseek(lfd, 0, SEEK_END);
+        ::close(lfd);
+        if (sz > 0) offset = static_cast<uint64_t>(sz);
+    }
+    lfd = -1;
+
+    bool eof = false;
+    uint64_t total = 0;
+    while (!eof) {
+        protocol::file::FilePacket req;
+        auto* g = req.mutable_get_req();
+        g->set_name(name);
+        g->set_offset(offset);
+        protocol::file::FilePacket resp;
+        if (!client::file_request(fd, req, resp)) return false;
+        const auto& gr = resp.get_resp();
+        if (gr.err() != protocol::user::ERR_SUCCESS) {
+            fprintf(stdout, "[fget] err=%s(%d)\n", err_name(gr.err()), static_cast<int>(gr.err()));
+            return false;
+        }
+        total = gr.total();
+        eof = gr.eof();
+        // 先落盘本片数据(即使本片带 eof 标志, 也要写), 再退出循环
+        const std::string& data = gr.data();
+        if (!data.empty()) {
+            if (lfd < 0) {
+                lfd = ::open(path.c_str(), O_WRONLY | O_CREAT | O_APPEND, 0644);
+                if (lfd < 0) {
+                    fprintf(stderr, "[fget] cannot create %s: %s\n", path.c_str(), strerror(errno));
+                    return false;
+                }
+            }
+            size_t written = 0;
+            while (written < data.size()) {
+                ssize_t n = ::write(lfd, data.data() + written, data.size() - written);
+                if (n < 0 && errno == EINTR) continue;
+                if (n <= 0) {
+                    ::close(lfd);
+                    fprintf(stderr, "[fget] write failed\n");
+                    return false;
+                }
+                written += static_cast<size_t>(n);
+            }
+            offset += data.size();
+        }
+    }
+    if (lfd >= 0) {
+        ::close(lfd);
+        lfd = -1;
+    }
+    // 服务器文件比本地小时(服务器端被覆盖), 截断本地多余部分
+    if (offset > total) {
+        ::truncate(path.c_str(), static_cast<off_t>(total));
+        offset = total;
+    }
+    fprintf(stdout, "[fget] %s downloaded: %llu bytes\n", path.c_str(),
+            static_cast<unsigned long long>(offset));
+    return true;
+}
+
 }  // namespace
 
 int main(int argc, char* argv[]) {
+    // 忽略 SIGPIPE: TLS 路径的 SSL_write 可能向已断开的 socket 写(如连接被拒后
+    // 仍做握手), 默认会 SIGPIPE 杀死进程并丢掉未刷新的 stdout。忽略后返回 EPIPE, 能干净报错。
+    signal(SIGPIPE, SIG_IGN);
+
+    // 仅提示文件目录位置(目录为仓库内已存在的 cli_send/cli_recv, 代码不创建)。
+    fprintf(stdout, "[client] file dirs: send %s/  recv %s/ (put files to send into the send dir)\n",
+            client_file_dir().c_str(), client_recv_dir().c_str());
+
     const char* ip = "127.0.0.1";
     int port = 2100;
     if (argc > 1) port = std::atoi(argv[1]);
@@ -567,6 +822,26 @@ int main(int argc, char* argv[]) {
 
     char line[1024];
     while (1) {
+        // 服务端主动断开连接(如被顶号/被踢): 及时提示并退出, 不必等用户输入才发现。
+        // (被顶号时, 服务端会先推 SystemNotify, 再由 reader 线程置 g_closed)
+        if (client::g_closed) {
+            fprintf(stdout, "\n[client] connection closed by server (可能被顶号强制下线)\n");
+            break;
+        }
+        struct pollfd pfd;
+        pfd.fd = STDIN_FILENO;
+        pfd.events = POLLIN;
+        pfd.revents = 0;
+        int pr = ::poll(&pfd, 1, 200);   // 200ms 轮询, 以便及时感知 g_closed
+        if (pr == 0) continue;           // 超时: 回头检查 g_closed
+        if (pr < 0) {
+            if (errno == EINTR) continue;
+            break;
+        }
+        // POLLIN=有输入; POLLHUP=对端已关(EOF)但可能还有缓冲数据未读 —— 都尝试读取,
+        // fgets 读到 EOF 返回 nullptr。忽略其它标志继续轮询。
+        if (!(pfd.revents & (POLLIN | POLLHUP))) continue;
+
         fprintf(stdout, "\nclient> ");
         fflush(stdout);
         if (fgets(line, sizeof(line), stdin) == nullptr) break;  // EOF
@@ -587,7 +862,7 @@ int main(int argc, char* argv[]) {
                 fprintf(stderr, "usage: register <username> <password> <nickname>\n");
                 continue;
             }
-            protocol::user::UserPacket req;
+            protocol::user::UserPacket req;   
             auto* r = req.mutable_register_req();
             r->set_username(username);
             r->set_password(password);
@@ -656,7 +931,7 @@ int main(int argc, char* argv[]) {
         } else if (strcmp(cmd, "friend") == 0) {
             char sub[64] = {0};
             if (sscanf(line, "%*s %63s", sub) != 1) {
-                fprintf(stderr, "usage: friend req|pending|del|check|block ...\n");
+                fprintf(stderr, "usage: friend req|pending|list|del|block ...\n");
                 continue;
             }
             if (strcmp(sub, "req") == 0) {
@@ -691,6 +966,19 @@ int main(int argc, char* argv[]) {
                                 static_cast<unsigned long long>(it.ts()));
                     }
                 }
+            } else if (strcmp(sub, "list") == 0) {
+                protocol::user::UserPacket req;
+                req.mutable_friend_list_req();
+                protocol::user::UserPacket resp;
+                if (client::user_request(fd, req, resp)) {
+                    const auto& rr = resp.friend_list_resp();
+                    fprintf(stdout, "[friend.list] err=%s(%d) friends=%d\n",
+                            err_name(rr.err()), static_cast<int>(rr.err()), rr.friends_size());
+                    for (const auto& it : rr.friends()) {
+                        fprintf(stdout, "  %-8u %-20s %s\n", it.user_id(), it.nickname().c_str(),
+                                it.online() ? "online" : "offline");
+                    }
+                }
             } else if (strcmp(sub, "del") == 0) {
                 uint32_t fid = 0;
                 if (sscanf(line, "%*s %*s %u", &fid) != 1) {
@@ -704,21 +992,6 @@ int main(int argc, char* argv[]) {
                     fprintf(stdout, "[friend.del] err=%s(%d)\n",
                             err_name(resp.friend_del_resp().err()),
                             static_cast<int>(resp.friend_del_resp().err()));
-                }
-            } else if (strcmp(sub, "check") == 0) {
-                uint32_t fid = 0;
-                if (sscanf(line, "%*s %*s %u", &fid) != 1) {
-                    fprintf(stderr, "usage: friend check <friend_id>\n");
-                    continue;
-                }
-                protocol::user::UserPacket req;
-                req.mutable_friend_check_req()->set_friend_id(fid);
-                protocol::user::UserPacket resp;
-                if (client::user_request(fd, req, resp)) {
-                    const auto& rr = resp.friend_check_resp();
-                    fprintf(stdout, "[friend.check] err=%s(%d) is_friend=%d nickname='%s'\n",
-                            err_name(rr.err()), static_cast<int>(rr.err()),
-                            rr.is_friend() ? 1 : 0, rr.nickname().c_str());
                 }
             } else if (strcmp(sub, "block") == 0) {
                 uint32_t fid = 0;
@@ -739,7 +1012,7 @@ int main(int argc, char* argv[]) {
                             static_cast<int>(resp.friend_block_resp().err()));
                 }
             } else {
-                fprintf(stderr, "usage: friend req|pending|del|check|block ...\n");
+                fprintf(stderr, "usage: friend req|pending|list|del|block ...\n");
             }
 
         } else if (strcmp(cmd, "chat") == 0) {
@@ -772,7 +1045,7 @@ int main(int argc, char* argv[]) {
             }
             protocol::chat::ChatPacket req;
             auto* r = req.mutable_history_req();
-            r->set_target_id(target_id);
+            r->set_target_id(target_id); 
             r->set_after_msg_id(0);
             r->set_limit(limit);
             protocol::chat::ChatPacket resp;
@@ -1007,6 +1280,70 @@ int main(int argc, char* argv[]) {
                             m.from_id() == g_uid ? "me" : "member",
                             m.from_id(), m.to_id(), m.content().c_str());
                 }
+            }
+
+        } else if (strcmp(cmd, "fsend") == 0) {
+            uint32_t to_id = 0;
+            char fname[128] = {0};
+            if (sscanf(line, "%*s %u %127s", &to_id, fname) != 2) {
+                fprintf(stderr, "usage: fsend <to_id> <filename>   (looks in %s/)\n",
+                        client_file_dir().c_str());
+                continue;
+            }
+            if (g_uid == 0) {
+                fprintf(stderr, "[error] login first\n");
+                continue;
+            }
+            upload_file(fd, to_id, fname);
+
+        } else if (strcmp(cmd, "fget") == 0) {
+            char fname[128] = {0};
+            if (sscanf(line, "%*s %127s", fname) != 1) {
+                fprintf(stderr, "usage: fget <filename>\n");
+                continue;
+            }
+            if (g_uid == 0) {
+                fprintf(stderr, "[error] login first\n");
+                continue;
+            }
+            download_file(fd, fname);
+
+        } else if (strcmp(cmd, "flist") == 0) {
+            if (g_uid == 0) {
+                fprintf(stderr, "[error] login first\n");
+                continue;
+            }
+            protocol::file::FilePacket req;
+            req.mutable_list_req()->set_owner_id(g_uid);
+            protocol::file::FilePacket resp;
+            if (client::file_request(fd, req, resp)) {
+                const auto& rr = resp.list_resp();
+                fprintf(stdout, "[flist] err=%s(%d) files=%d\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()), rr.files_size());
+                for (const auto& f : rr.files()) {
+                    fprintf(stdout, "  %-40s %10llu bytes\n", f.name().c_str(),
+                            static_cast<unsigned long long>(f.size()));
+                }
+            }
+
+        } else if (strcmp(cmd, "fstat") == 0) {
+            char fname[128] = {0};
+            if (sscanf(line, "%*s %127s", fname) != 1) {
+                fprintf(stderr, "usage: fstat <filename>\n");
+                continue;
+            }
+            if (g_uid == 0) {
+                fprintf(stderr, "[error] login first\n");
+                continue;
+            }
+            protocol::file::FilePacket req;
+            req.mutable_stat_req()->set_name(fname);
+            protocol::file::FilePacket resp;
+            if (client::file_request(fd, req, resp)) {
+                const auto& rr = resp.stat_resp();
+                fprintf(stdout, "[fstat] err=%s(%d) size=%llu\n",
+                        err_name(rr.err()), static_cast<int>(rr.err()),
+                        static_cast<unsigned long long>(rr.size()));
             }
 
         } else {

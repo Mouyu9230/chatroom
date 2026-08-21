@@ -60,6 +60,10 @@ std::vector<char> group_packet(const protocol::group::GroupPacket& pkt) {
     return build_packet(protocol::DOMAIN_GROUP, pkt);
 }
 
+std::vector<char> file_packet(const protocol::file::FilePacket& pkt) {
+    return build_packet(protocol::DOMAIN_FILE, pkt);
+}
+
 }  // namespace detail
 
 // ------------------------------------------------------------
@@ -99,6 +103,8 @@ TaskResult handle_task(const Task& task) {
             return detail::on_chat_packet(task, body, body_len);
         case protocol::DOMAIN_GROUP:
             return detail::on_group_packet(task, body, body_len);
+        case protocol::DOMAIN_FILE:
+            return detail::on_file_packet(task, body, body_len);
         default:
             fprintf(stderr, "[handler] unknown domain: 0x%02x\n", hdr->type);
             return {task.fd, {}, true};

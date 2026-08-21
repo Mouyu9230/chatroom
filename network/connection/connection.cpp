@@ -20,6 +20,9 @@ Connection::Connection(int fd)
     , send_buf_()
     , send_len_(0)
 {
+    // 初始缓冲大小; 超出时由 recv_send 按需自动增长(见 ensure_*_capacity)
+    recv_buf_.resize(RECV_BUFFER_SIZE);
+    send_buf_.resize(SEND_BUFFER_SIZE);
 }
 
 Connection::~Connection() {

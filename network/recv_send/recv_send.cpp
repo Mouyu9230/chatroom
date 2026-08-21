@@ -14,14 +14,29 @@
 //   -2  无数据可读(EAGAIN / TLS WANT_READ)
 //   -3  本次操作需要等待另一方向事件(TLS WANT_WRITE / WANT_READ), 需重挂事件
 int recv_send::Recv(Connection& conn) {//读数据到接收缓冲区
-    char* buf     = conn.recv_buffer();
-    int   buf_len = conn.recv_length();
-    int   cap     = RECV_BUFFER_SIZE;
+    char*  buf     = conn.recv_buffer();
+    int    buf_len = conn.recv_length();
+    size_t cap     = conn.recv_capacity();
 
-    if (buf_len >= cap) {
-        //已满，无法继续读取
-        return -1;
+    // 需要读到的目标长度: 已拿到包头则按包头声明, 否则先读满一个包头。
+    // 接收缓冲据此按需自动增长(上限 MAX_BODY_LEN + 包头), 不再受固定 8KB 限制,
+    // 从而可整包接收大尺寸文件分片(如 1MB)。
+    size_t want = sizeof(protocol::packet_header);
+    if (buf_len >= (int)sizeof(protocol::packet_header)) {
+        auto* hdr = reinterpret_cast<protocol::packet_header*>(buf);
+        if (hdr->magic != protocol::MAGIC_NUM) return -1;         // 魔数错误: 协议非法, 关闭
+        if (hdr->body_len > protocol::MAX_BODY_LEN) return -1;    // 声明长度超限: 协议非法, 关闭
+        want = sizeof(protocol::packet_header) + hdr->body_len;
     }
+    if (want > cap) {
+        conn.ensure_recv_capacity(want);
+        buf = conn.recv_buffer();
+        cap = conn.recv_capacity();
+    }
+    if (buf_len >= (int)cap) {
+        return -1;   // 已满且无法增长(want<=cap 由上面保证, 正常到不了这)
+    }
+    int readable = (int)cap - buf_len;
 
     SSL* ssl = conn.ssl();
     if (ssl == nullptr) {
@@ -169,11 +184,13 @@ int recv_send::FetchPacket(Connection& conn, char* packet, size_t& packet_len) {
 
 bool recv_send::AppendSendBuffer(Connection& conn, const char* data, size_t len) {//数据写入发送缓冲区
     int buf_len = conn.send_length();
-    if (buf_len + (int)len > SEND_BUFFER_SIZE) {
-        return false;   // 缓冲区空间不足
+    // 发送缓冲按需自动增长(上限 MAX_SEND_BUFFER_SIZE), 不再受固定 8KB 限制。
+    // 超过上限才返回 false(调用方应关闭该连接)。
+    if (!conn.ensure_send_capacity(static_cast<size_t>(buf_len) + len)) {
+        return false;   // 发送缓冲超上限(防积压 OOM)
     }
 
     memcpy(conn.send_buffer() + buf_len, data, len);
-    conn.set_send_length(buf_len + len);
+    conn.set_send_length(buf_len + static_cast<int>(len));
     return true;
 }

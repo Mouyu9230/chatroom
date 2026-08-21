@@ -172,6 +172,26 @@ TaskResult on_friend_pending_list(const Task& task, const protocol::user::Friend
     return {task.fd, detail::user_packet(resp), false};
 }
 
+TaskResult on_friend_list(const Task& task, const protocol::user::FriendListRequest&) {
+    protocol::user::UserPacket resp;
+    auto* r = resp.mutable_friend_list_resp();
+    if (task.user_id == 0) {
+        r->set_err(protocol::user::ERR_NOT_LOGGED_IN);
+        return {task.fd, detail::user_packet(resp), false};
+    }
+    DbGuard g(db_pool());
+    if (!g) {
+        r->set_err(protocol::user::ERR_SYSTEM);
+        return {task.fd, detail::user_packet(resp), false};
+    }
+
+    std::vector<protocol::user::FriendListItem> items;
+    int err = db::user::friend_list(*g, task.user_id, items);
+    r->set_err(static_cast<protocol::user::ErrCode>(err));
+    for (auto& it : items) *r->mutable_friends()->Add() = it;
+    return {task.fd, detail::user_packet(resp), false};
+}
+
 TaskResult on_friend_del(const Task& task, const protocol::user::FriendDelRequest& req) {
     protocol::user::UserPacket resp;
     auto* r = resp.mutable_friend_del_resp();
@@ -196,24 +216,6 @@ TaskResult on_friend_del(const Task& task, const protocol::user::FriendDelReques
     }
 
     return result;
-}
-
-TaskResult on_friend_check(const Task& task, const protocol::user::FriendCheckRequest& req) {
-    protocol::user::UserPacket resp;
-    auto* r = resp.mutable_friend_check_resp();
-    if (task.user_id == 0) {
-        r->set_err(protocol::user::ERR_NOT_LOGGED_IN);
-        return {task.fd, detail::user_packet(resp), false};
-    }
-    DbGuard g(db_pool());
-    int err = protocol::user::ERR_SYSTEM;
-    bool is_friend = false;
-    std::string nickname;
-    if (g) err = db::user::friend_check(*g, task.user_id, req.friend_id(), is_friend, nickname);
-    r->set_err(static_cast<protocol::user::ErrCode>(err));
-    r->set_is_friend(is_friend);
-    r->set_nickname(nickname);
-    return {task.fd, detail::user_packet(resp), false};
 }
 
 TaskResult on_friend_block(const Task& task, const protocol::user::FriendBlockRequest& req) {
@@ -316,10 +318,10 @@ TaskResult on_user_packet(const Task& task, const char* body, size_t body_len) {
             return on_friend_request(task, pkt.friend_request_req());
         case protocol::user::UserPacket::kFriendPendingListReq:
             return on_friend_pending_list(task, pkt.friend_pending_list_req());
+        case protocol::user::UserPacket::kFriendListReq:
+            return on_friend_list(task, pkt.friend_list_req());
         case protocol::user::UserPacket::kFriendDelReq:
             return on_friend_del(task, pkt.friend_del_req());
-        case protocol::user::UserPacket::kFriendCheckReq:
-            return on_friend_check(task, pkt.friend_check_req());
         case protocol::user::UserPacket::kFriendBlockReq:
             return on_friend_block(task, pkt.friend_block_req());
         case protocol::user::UserPacket::kCancelReq:

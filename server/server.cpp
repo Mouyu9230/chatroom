@@ -53,6 +53,10 @@ constexpr uint64_t HEARTBEAT_TIMEOUT_MS = 15000;
 // 存指针: 连接若被其它路径提前关闭, 其 fd 复用时不会误关新连接。
 static std::unordered_set<Connection*> g_pending_close;
 
+// 被"顶号"(同账号在别处登录)踢出的旧连接: 已把"被顶号"通知追加到其发送缓冲,
+// 待 EPOLLOUT 排空后关闭(确保旧客户端先收到提示再断开)。仅主线程访问。
+static std::unordered_set<Connection*> g_kick_close;
+
 // 全局 TLS 上下文: 进程内共享, 加载同一份服务端证书。仅主线程创建。
 static SSL_CTX* g_ssl_ctx = nullptr;
 
@@ -139,6 +143,7 @@ static void clear_user_binding(int fd) {
     }
     if (conn != nullptr) {
         g_pending_close.erase(conn);
+        g_kick_close.erase(conn);
     }
 }
 
@@ -218,76 +223,110 @@ int main(int argc,char* argv[]){
 
      recv_send rs_tool;
 
-     while(g_running){
+     // 线程池结果就绪通知: 结果入队即写 eventfd 唤醒主循环,
+     // 避免每轮只能靠 epoll 超时(100ms)才取回结果 —— 大文件分片等高频
+     // 请求/响应因此不再被 100ms 门控拖慢。
+     const int result_evt_fd = pool.result_event_fd();
+     if (result_evt_fd >= 0) {
+         epoll_main.add(result_evt_fd, EPOLLIN);
+     }
 
-        {
-            TaskResult result;
-            while(pool.try_get_result(result)){//处理任务结果循环
+     // 处理线程池结果(响应发送/连接关闭/在线表路由推送)。eventfd 触发时与
+     // 循环顶部各调用一次; try_get_result 非阻塞, 重复调用安全。
+     auto drain_results = [&]() {
+         TaskResult result;
+         while (pool.try_get_result(result)) {  // 处理任务结果循环
 
-                Connection* conn = connection_get(result.fd);
-                if(result.need_close){
-                    clear_user_binding(result.fd);
-                    epoll_main.del(result.fd);
-                    connection_remove(result.fd);
-                    fprintf(stdout,"[close] fd=%d closed successfully as requested\n",result.fd);
-                } else if(conn != nullptr){
-                    // 登录成功的结果带有 user_id, 把连接绑定为该用户并登记在线表
-                    if(result.user_id != 0){
-                        conn->set_user_id(result.user_id);
-                        g_user_to_fd[result.user_id] = result.fd;
-                        fprintf(stdout, "[bind] fd=%d -> user=%u\n", result.fd, result.user_id);
-                    }
-                    // 登出: 解绑用户与在线表, 但不关闭连接
-                    if(result.unbind_user && conn->user_id() != 0){
-                        g_user_to_fd.erase(conn->user_id());
-                        fprintf(stdout, "[unbind] fd=%d unbind user=%u\n",
-                                result.fd, conn->user_id());
-                        conn->set_user_id(0);
-                    }
-                    if(!result.data.empty()){
-                        if(!rs_tool.AppendSendBuffer(*conn, result.data.data(), result.data.size())){
-                            clear_user_binding(result.fd);
-                            epoll_main.del(result.fd);
-                            connection_remove(result.fd);
-                        } else {
-                            epoll_main.mod(result.fd,EPOLLIN|EPOLLOUT);
-                        }
-                    }
-                }
+             Connection* conn = connection_get(result.fd);
+             if (result.need_close) {
+                 clear_user_binding(result.fd);
+                 epoll_main.del(result.fd);
+                 connection_remove(result.fd);
+                 fprintf(stdout, "[close] fd=%d closed successfully as requested\n", result.fd);
+             } else if (conn != nullptr) {
+                 // 登录成功的结果带有 user_id, 把连接绑定为该用户并登记在线表。
+                 // 若该账号已在本服务端在线(顶号): 先踢掉旧连接(追加"被顶号"通知,
+                 // 排空后关闭), 新连接取而代之。
+                 if (result.user_id != 0) {
+                     auto old_it = g_user_to_fd.find(result.user_id);
+                     if (old_it != g_user_to_fd.end() && old_it->second != result.fd) {
+                         const int old_fd = old_it->second;
+                         Connection* old_conn = connection_get(old_fd);
+                         g_user_to_fd.erase(old_it);       // 先摘掉旧映射
+                         if (old_conn != nullptr) {
+                             old_conn->set_user_id(0);     // 解绑, 不再接收推送
+                             g_pending_close.erase(old_conn);
+                             PendingPush kick = handler::make_system_notify(
+                                 result.user_id, "你的账号已在别处登录, 此连接已被强制下线");
+                             if (rs_tool.AppendSendBuffer(*old_conn, kick.data.data(),
+                                                          kick.data.size())) {
+                                 g_kick_close.insert(old_conn);   // 排空后关闭
+                                 epoll_main.mod(old_fd, EPOLLIN | EPOLLOUT);
+                             } else {
+                                 epoll_main.del(old_fd);
+                                 connection_remove(old_fd);
+                             }
+                             fprintf(stdout, "[kick] user=%u fd=%d replaced by fd=%d\n",
+                                     result.user_id, old_fd, result.fd);
+                         }
+                     }
+                     conn->set_user_id(result.user_id);
+                     g_user_to_fd[result.user_id] = result.fd;
+                     fprintf(stdout, "[bind] fd=%d -> user=%u\n", result.fd, result.user_id);
+                 }
+                 // 登出: 解绑用户与在线表, 但不关闭连接
+                 if (result.unbind_user && conn->user_id() != 0) {
+                     g_user_to_fd.erase(conn->user_id());
+                     fprintf(stdout, "[unbind] fd=%d unbind user=%u\n",
+                             result.fd, conn->user_id());
+                     conn->set_user_id(0);
+                 }
+                 if (!result.data.empty()) {
+                     if (!rs_tool.AppendSendBuffer(*conn, result.data.data(), result.data.size())) {
+                         clear_user_binding(result.fd);
+                         epoll_main.del(result.fd);
+                         connection_remove(result.fd);
+                     } else {
+                         epoll_main.mod(result.fd, EPOLLIN | EPOLLOUT);
+                     }
+                 }
+             }
 
-                // 处理需推送给其它在线用户的包(如ChatNotify)
-                for (const auto& push : result.pushes) {
-                    auto it = g_user_to_fd.find(push.to_user_id);
-                    if (it == g_user_to_fd.end()) continue;   // 不在线, 丢弃(消息已落库, 可拉历史)
-                    Connection* pconn = connection_get(it->second);
-                    if (pconn == nullptr) {
-                        g_user_to_fd.erase(it);
-                        continue;
-                    }
-                    if (rs_tool.AppendSendBuffer(*pconn, push.data.data(), push.data.size())) {
-                        epoll_main.mod(it->second, EPOLLIN | EPOLLOUT);
-                    } else {
-                        clear_user_binding(it->second);
-                        epoll_main.del(it->second);
-                        connection_remove(it->second);
-                    }
-                }
+             // 处理需推送给其它在线用户的包(如ChatNotify)
+             for (const auto& push : result.pushes) {
+                 auto it = g_user_to_fd.find(push.to_user_id);
+                 if (it == g_user_to_fd.end()) continue;   // 不在线, 丢弃(消息已落库, 可拉历史)
+                 Connection* pconn = connection_get(it->second);
+                 if (pconn == nullptr) {
+                     g_user_to_fd.erase(it);
+                     continue;
+                 }
+                 if (rs_tool.AppendSendBuffer(*pconn, push.data.data(), push.data.size())) {
+                     epoll_main.mod(it->second, EPOLLIN | EPOLLOUT);
+                 } else {
+                     clear_user_binding(it->second);
+                     epoll_main.del(it->second);
+                     connection_remove(it->second);
+                 }
+             }
 
-                // 心跳超时触发的合成登出结果已处理: 关闭该连接。
-                // 仅当连接仍存在且仍是投递任务时的那一个才关(防 fd 复用误关新连接)。
-                Connection* rc = connection_get(result.fd);
-                if (rc != nullptr && g_pending_close.erase(rc)) {
-                    clear_user_binding(result.fd);
-                    epoll_main.del(result.fd);
-                    connection_remove(result.fd);
-                    fprintf(stdout, "[close] fd=%d (heartbeat timeout logout)\n", result.fd);
-                }
+             // 心跳超时触发的合成登出结果已处理: 关闭该连接。
+             // 仅当连接仍存在且仍是投递任务时的那一个才关(防 fd 复用误关新连接)。
+             Connection* rc = connection_get(result.fd);
+             if (rc != nullptr && g_pending_close.erase(rc)) {
+                 clear_user_binding(result.fd);
+                 epoll_main.del(result.fd);
+                 connection_remove(result.fd);
+                 fprintf(stdout, "[close] fd=%d (heartbeat timeout logout)\n", result.fd);
+             }
+         }
+     };
 
-            }
+     while (g_running) {
 
-        }
+        drain_results();
 
-        int ev_num=epoll_main.wait(100);
+        int ev_num = epoll_main.wait(100);
 
         if(ev_num<0){
             if(errno==EINTR)continue;//被信号打断，重试
@@ -300,7 +339,16 @@ int main(int argc,char* argv[]){
             const struct epoll_event& ev=epoll_main.events()[i];
             const int ev_data_fd=ev.data.fd;
 
-            if(ev_data_fd==listen_sock.fd()){//新连接 
+            // 线程池结果就绪: 排空 eventfd 计数器并立即处理结果(不必等 100ms 超时)
+            if (result_evt_fd >= 0 && ev_data_fd == result_evt_fd) {
+                uint64_t counter = 0;
+                ssize_t rr = ::read(result_evt_fd, &counter, sizeof(counter));
+                (void)rr;
+                drain_results();
+                continue;
+            }
+
+            if(ev_data_fd==listen_sock.fd()){//新连接
                 if(ev.events&EPOLLIN){
                     while(true){
                         //避免 Socket::accept()对 EAGAIN 也调 perror
@@ -462,9 +510,16 @@ int main(int argc,char* argv[]){
                     continue;
                 }
 
-                // 发送缓冲区已空 关闭写监听，避免 epoll 空转
+                // 发送缓冲区已空: 若是被顶号踢出的旧连接, "被顶号"通知已发出, 关闭它
                 if (conn->send_length() == 0) {
-                    epoll_main.mod(ev_data_fd, EPOLLIN);
+                    if (g_kick_close.erase(conn)) {
+                        clear_user_binding(ev_data_fd);
+                        epoll_main.del(ev_data_fd);
+                        connection_remove(ev_data_fd);
+                        fprintf(stdout, "[kick] fd=%d closed (kicked user notified)\n", ev_data_fd);
+                    } else {
+                        epoll_main.mod(ev_data_fd, EPOLLIN);
+                    }
                 }
             }
 
