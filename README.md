@@ -33,4 +33,4 @@ cmake ..
 cmake --build . -j"$(nproc)"
 ```
 
-构建产物为 `build/` 下的 `server` / `client` / `db_smoke` 三个可执行文件。
+构建产物为 `build/` 下的 `server` / `client` 两个可执行文件。

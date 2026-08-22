@@ -43,7 +43,7 @@ set(NETWORK_SOURCES
     "network/thread_pool/thread_pool.cpp"
 )
 
-# MySQL 封装模块(仅 server / db_smoke 使用)
+# MySQL 封装模块(仅 server 使用)
 set(DATABASE_SOURCES
     "database/db.cpp"
     "database/db_config.cpp"
@@ -89,12 +89,16 @@ add_executable(client
 target_include_directories(client PRIVATE ${COMMON_INCLUDES})
 target_link_libraries(client PRIVATE protobuf::libprotobuf OpenSSL::SSL OpenSSL::Crypto)
 
-# ---- db_smoke ----
-# MySQL 封装冒烟测试(独立可执行, 不依赖 handler)
-add_executable(db_smoke
-    database/db_smoke.cpp
-    ${DATABASE_SOURCES}
-    ${PROTO_PB}
-)
-target_include_directories(db_smoke PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(db_smoke PRIVATE protobuf::libprotobuf Threads::Threads PkgConfig::MYSQL PkgConfig::HIREDIS)
+# ---- db_smoke (可选, 默认不构建) ----
+# MySQL 封装冒烟测试(独立可执行, 不依赖 handler)。release 默认排除,
+# 需要时以 -DBUILD_DB_SMOKE=ON 启用。
+option(BUILD_DB_SMOKE "Build the db_smoke smoke test" OFF)
+if(BUILD_DB_SMOKE)
+    add_executable(db_smoke
+        database/db_smoke.cpp
+        ${DATABASE_SOURCES}
+        ${PROTO_PB}
+    )
+    target_include_directories(db_smoke PRIVATE ${COMMON_INCLUDES})
+    target_link_libraries(db_smoke PRIVATE protobuf::libprotobuf Threads::Threads PkgConfig::MYSQL PkgConfig::HIREDIS)
+endif()
