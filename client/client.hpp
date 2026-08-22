@@ -12,15 +12,9 @@
 namespace client {
 
 // ============================================================
-//  客户端协议层 —— 与 server 共用同一套 framing
-//
-//  数据包布局: packet_header(8B) + protobuf body, 与 handler 一致:
-//     magic(2) + ver(1) + type(1) + body_len(4) + body
-//  type 为域: DOMAIN_USER → UserPacket / DOMAIN_CHAT → ChatPacket
-//
-//  读模型: 启动后台收包线程(start_reader)常驻读 socket,
-//    推送(ChatNotify/SystemNotify/UserStatusNotify)实时打印;
-//    请求响应入队, 由 user_request/chat_request 取回。
+//  客户端协议层 —— 与 server 共用同一套 framing。
+//  数据包: packet_header(8B: magic+ver+type+body_len) + protobuf body; type 为域。
+//  读模型: 后台收包线程(start_reader)常驻读 socket, 推送实时打印, 响应入队供 *_request 取回。
 // ============================================================
 
 /// 构建一个完整数据包(header + protobuf body)

@@ -24,23 +24,13 @@
 #include "network/thread_pool/task_queue.hpp"
 
 // ============================================================
-//  file 域业务实现 —— 聊天室文件传输(收件箱模型)
+//  file 域 —— 聊天室文件传输(收件箱模型), 仿 FTP STOR/RETR/LIST/REST。
+//  复用单条 TLS 连接 + epoll + 线程池, 不另开数据通道。
+//  文件按 FILE_CHUNK_SIZE(1MB)分片, 每片一次请求/响应(串行 = 有序 + 流控 + 续传)。
 //
-//  定位: 仿 FTP 的 STOR/RETR/LIST/SIZE/REST 语义, 但复用现有
-//  单条 TLS 连接 + epoll + 线程池传输(不另开数据通道)。
-//
-//  约束: 收发缓冲区各 8KB, 单包必须 < 8KB → 文件数据按 FILE_CHUNK_SIZE
-//  (4KB)/片传递。上传时每片一次请求/响应(FileChunkAck), 客户端串行发片,
-//  天然有序、天然流控、天然断点续传。
-//
-//  会话状态: 线程池是无状态多 worker 模型, 无法像 ftp 那样在线程栈上
-//  保存 ftp_session; 因此用「发送方 user_id → 上传目标」的全局注册表
-//  (g_sessions) 记住 FileSendReq 协商出的接收者与文件名, 供后续 FileChunk /
-//  FileSendFinish 使用, 用互斥锁保护。上传结束即删除(部分上传留下的
-//  半成品文件保留, 下次同文件续传)。
-//
-//  存储: server/files/<接收者user_id>/<文件名>(文件目录写死在 server/ 下, 不手动指定路径)。
-//  文件名统一取 basename 并清洗, 防目录穿越。
+//  存储: server/files/<接收者id>_<文件名>, 平铺不建目录; 文件名取 basename 清洗防穿越。
+//  会话: 线程池无状态, 用全局表 g_sessions(发送方→目标)串起 SendReq 后的 Chunk/Finish,
+//  互斥锁保护; 上传结束即删, 半成品文件保留供续传。
 // ============================================================
 namespace handler {
 namespace {

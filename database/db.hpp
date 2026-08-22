@@ -7,19 +7,8 @@
 #include "db_config.hpp"
 
 // ============================================================
-//  Db —— 单个 MySQL 连接的最小 RAII 封装
-//
-//  职责: 连接/断开、SQL 执行与查询、字符串转义、错误信息。
-//  线程安全: 非线程安全 —— 同一 Db 同一时刻只能被一个线程使用,
-//  由 DbPool 保证: 每次只借出一个连接给一个工作线程。
-//
-//  用法示例:
-//    Db db;
-//    DbConfig cfg; cfg.load_from_env();
-//    if (!db.connect(cfg)) { ... }
-//    db.execute("UPDATE users SET online=1 WHERE user_id=1");
-//    db.query("SELECT nickname FROM users WHERE user_id=1",
-//             [](const std::vector<std::string>& row) { ... return true; });
+//  Db —— 单个 MySQL 连接的最小 RAII 封装: 连接/断开、SQL 执行与查询、
+//  字符串转义、错误信息。非线程安全, 同一时刻只能一个线程使用, 由 DbPool 借还。
 // ============================================================
 class Db {
 public:

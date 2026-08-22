@@ -136,7 +136,7 @@ int register_user(Db& db, const std::string& username, const std::string& passwo
         std::to_string(now_sec()) + ")";
     if (!db.execute(self_friend)) return protocol::user::ERR_SYSTEM;
 
-    // 新用户可能因 uid 复用残留旧缓存, 清一下昵称与自好友关系。
+
     RedisGuard r(redis_pool());
     cache_invalidate_nick(r.get(), user_id);
     cache_invalidate_bool(r.get(), pair_key(kFriendPrefix, user_id, user_id));

@@ -13,15 +13,11 @@
 
 // ============================================================
 //  handler 内部共享工具 —— 仅供 handler 各域实现文件使用。
-//
-//  handler 模块按域拆分为 user/chat/group 三个实现文件, 各自持有一批
-//  on_* 业务函数; 本头文件只暴露它们与 handler.cpp 之间需要共享的接口:
-//    - build_packet / user_packet / chat_packet / group_packet:
-//      组装 8 字节头 + protobuf body, 并按域封包(定义在 handler.cpp)。
-//    - on_user_packet / on_chat_packet / on_group_packet:
-//      各域 oneof 分发器(定义在各域实现文件), 由 handler.cpp 的
-//      handle_task 按 hdr->type 调用。
-//  这些符号仅供本模块内部使用, 不对外暴露。
+//  暴露 handler 域间共享的接口:
+//    build_packet / *_packet: 组包工具(handler.cpp)
+//    on_user_packet / on_chat_packet / on_group_packet: 各域 oneof 分发器
+//    (user/chat/group_handler.cpp), 由 handle_task 按 hdr->type 调用。
+//  不对外暴露。
 // ============================================================
 namespace handler {
 namespace detail {

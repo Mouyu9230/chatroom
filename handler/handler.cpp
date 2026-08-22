@@ -11,16 +11,9 @@
 #include "network/thread_pool/task_queue.hpp"
 
 // ============================================================
-//  handler 入口: 业务分派 + 共享工具
-//
-//  业务实现按域拆分:
-//    - user 域  → user_handler.cpp
-//    - chat 域  → chat_handler.cpp
-//    - group 域 → group_handler.cpp
-//  本文件只保留:
-//    - build_packet / user_packet / chat_packet / group_packet(封包工具)
-//    - make_system_notify(跨域系统通知推送)
-//    - handle_task(按 hdr->type 域分派, 调用各域分发器)
+//  handler 入口: 业务分派 + 共享工具。
+//  业务按域拆分到 user/chat/group_handler.cpp; 本文件只保留组包工具、
+//  make_system_notify(跨域系统通知) 和按 hdr->type 域分派的 handle_task。
 // ============================================================
 
 namespace handler {

@@ -36,13 +36,8 @@ SSL* g_ssl = nullptr;
 std::mutex g_ssl_mtx;
 
 // ============================================================
-//  客户端实现
-//
-//  用法: client [port] [ip]   (默认 127.0.0.1:2100)
-//
-//  结构: 后台收包线程常驻读 socket, 实时打印服务端推送
-//  (ChatNotify / SystemNotify / UserStatusNotify); 请求响应入队,
-//  主线程命令循环通过 user_request/chat_request 从队列取回。
+//  客户端实现  用法: client [port] [ip]  (默认 127.0.0.1:2100)
+//  后台收包线程常驻读 socket 实时打印推送; 请求响应入队, 主线程取回。
 // ============================================================
 
 namespace client {
