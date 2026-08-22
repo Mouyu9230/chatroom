@@ -24,6 +24,8 @@ pkg_check_modules(MYSQL REQUIRED IMPORTED_TARGET mysqlclient)
 pkg_check_modules(HIREDIS REQUIRED IMPORTED_TARGET hiredis)
 # TLS 通信加密 (network/ 模块的 SSL 读写)
 find_package(OpenSSL REQUIRED)
+# CLI 行编辑/历史/补全 (client/ 模块的 readline 集成; libreadline-dev)
+pkg_check_modules(READLINE REQUIRED IMPORTED_TARGET readline)
 
 # ---- 源码 ----
 # 预生成的 protobuf 文件(user/chat/group/file 域)
@@ -83,11 +85,12 @@ target_link_libraries(server PRIVATE protobuf::libprotobuf Threads::Threads PkgC
 # 客户端仅使用 socket 与协议层, 不涉及线程池/业务处理/数据库
 add_executable(client
     client/client.cpp
+    client/ui.cpp
     network/socket/socket.cpp
     ${PROTO_PB}
 )
 target_include_directories(client PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(client PRIVATE protobuf::libprotobuf OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(client PRIVATE protobuf::libprotobuf OpenSSL::SSL OpenSSL::Crypto PkgConfig::READLINE)
 
 # ---- db_smoke (可选, 默认不构建) ----
 # MySQL 封装冒烟测试(独立可执行, 不依赖 handler)。release 默认排除,
