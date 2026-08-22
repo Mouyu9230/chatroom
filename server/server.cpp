@@ -156,8 +156,8 @@ int main(int argc,char* argv[]){
 
     const char* ip="0.0.0.0";
     int port=2100;
-    if(argc>1)port=std::atoi(argv[1]);
-    if(argc>2)ip=argv[2];
+    if(argc>1)ip=argv[1];
+    if(argc>2)port=std::atoi(argv[2]);
     const char* cert_file = "server.crt";
     const char* key_file  = "server.key";
     if(argc>3)cert_file=argv[3];

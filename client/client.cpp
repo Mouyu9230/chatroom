@@ -36,7 +36,7 @@ SSL* g_ssl = nullptr;
 std::mutex g_ssl_mtx;
 
 // ============================================================
-//  客户端实现  用法: client [port] [ip]  (默认 127.0.0.1:2100)
+//  客户端实现  用法: client [ip] [port]  (默认 127.0.0.1:2100)
 //  后台收包线程常驻读 socket 实时打印推送; 请求响应入队, 主线程取回。
 // ============================================================
 
@@ -784,8 +784,8 @@ int main(int argc, char* argv[]) {
 
     const char* ip = "127.0.0.1";
     int port = 2100;
-    if (argc > 1) port = std::atoi(argv[1]);
-    if (argc > 2) ip = argv[2];
+    if (argc > 1) ip = argv[1];
+    if (argc > 2) port = std::atoi(argv[2]);
 
     network::Socket sock;
     if (sock.connect(ip, port) != 0) {
