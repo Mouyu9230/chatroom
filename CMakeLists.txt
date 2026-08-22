@@ -20,6 +20,8 @@ find_package(Threads REQUIRED)
 # MySQL 客户端 (database/ 模块)
 find_package(PkgConfig REQUIRED)
 pkg_check_modules(MYSQL REQUIRED IMPORTED_TARGET mysqlclient)
+# Redis 客户端 hiredis (database/ 模块, 热读 cache-aside 缓存)
+pkg_check_modules(HIREDIS REQUIRED IMPORTED_TARGET hiredis)
 # TLS 通信加密 (network/ 模块的 SSL 读写)
 find_package(OpenSSL REQUIRED)
 
@@ -50,6 +52,7 @@ set(DATABASE_SOURCES
     "database/user_db.cpp"
     "database/chat_db.cpp"
     "database/group_db.cpp"
+    "database/redis.cpp"
 )
 
 set(COMMON_INCLUDES
@@ -74,7 +77,7 @@ add_executable(server
     ${PROTO_PB}
 )
 target_include_directories(server PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(server PRIVATE protobuf::libprotobuf Threads::Threads PkgConfig::MYSQL OpenSSL::SSL OpenSSL::Crypto)
+target_link_libraries(server PRIVATE protobuf::libprotobuf Threads::Threads PkgConfig::MYSQL PkgConfig::HIREDIS OpenSSL::SSL OpenSSL::Crypto)
 
 # ---- client ----
 # 客户端仅使用 socket 与协议层, 不涉及线程池/业务处理/数据库
@@ -94,4 +97,4 @@ add_executable(db_smoke
     ${PROTO_PB}
 )
 target_include_directories(db_smoke PRIVATE ${COMMON_INCLUDES})
-target_link_libraries(db_smoke PRIVATE protobuf::libprotobuf Threads::Threads PkgConfig::MYSQL)
+target_link_libraries(db_smoke PRIVATE protobuf::libprotobuf Threads::Threads PkgConfig::MYSQL PkgConfig::HIREDIS)

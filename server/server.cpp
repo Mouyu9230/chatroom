@@ -32,6 +32,7 @@
 #include "../database/db_config.hpp"
 #include "../database/db_pool.hpp"
 #include "../database/db_init.hpp"
+#include "../database/redis.hpp"
 #include "db_admin.hpp"
 
 // 运行标志。主循环 + dbadmin 控制台线程都会读它(停机时控制台线程退出)。
@@ -187,6 +188,21 @@ int main(int argc,char* argv[]){
     }
     fprintf(stdout, "[init] mysql pool ready (host=%s:%u db=%s pool=%zu)\n",
             db_cfg.host.c_str(), db_cfg.port, db_cfg.database.c_str(), db_cfg.pool_size);
+
+    // ---- 初始化 Redis 缓存池(fail-open) ----
+    // Redis 只是热读缓存, 初始化失败仅告警不退出: 之后 cache 全部回退 MySQL,
+    // 功能不受影响(见 database/redis.hpp 的降级约定)。
+    RedisConfig redis_cfg;
+    redis_cfg.load_from_env();
+    if (!redis_pool().init(redis_cfg)) {
+        fprintf(stderr, "[warn] Redis cache unavailable (%s:%u pool=%zu), "
+                        "cache-aside disabled, falling back to MySQL.\n"
+                        "  Start redis-server, or set CHATROOM_REDIS_* env vars to enable.\n",
+                redis_cfg.host.c_str(), redis_cfg.port, redis_cfg.pool_size);
+    } else {
+        fprintf(stdout, "[init] redis cache ready (host=%s:%u pool=%zu)\n",
+                redis_cfg.host.c_str(), redis_cfg.port, redis_cfg.pool_size);
+    }
 
     // ---- 初始化 TLS(全连接加密) ----
     // init_tls 内部会自动定位证书(见 find_file), 成功时打印实际加载路径

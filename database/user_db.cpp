@@ -2,6 +2,9 @@
 
 #include <chrono>
 #include <cstdlib>
+#include <string>
+
+#include "redis.hpp"
 
 namespace db {
 namespace user {
@@ -29,6 +32,67 @@ int rel_status(Db& db, uint32_t a, uint32_t b) {
         return false;  // 只取一行
     });
     return st;
+}
+
+// ============================================================
+//  Redis 热读缓存(cache-aside) —— 仅做加速, 不改变语义
+//
+//  覆盖三个高频读: 昵称 / 是否拉黑 / 是否好友。
+//    - 读: 先查 Redis, 未命中再走 MySQL 并回填(TTL 兜底);
+//    - 写: 相关写函数在 MySQL 成功后显式失效(见各函数);
+//    - 降级: Redis 不可用(RedisGuard 为空 / get 出错)一律回退 MySQL。
+//
+//  key 规约:
+//    cr:nick:{uid}          -> nickname,   TTL 1h
+//    cr:block:{lo}:{hi}     -> "1"/"0",    TTL 30s(双向共用)
+//    cr:friend:{lo}:{hi}    -> "1"/"0",    TTL 30s(双向共用, status=1 判定)
+//  拉黑/好友判定本身对称, 故键按 (min,max) 规范化, 双向共用一个键,
+//  失效一次即可覆盖两个方向。
+// ============================================================
+constexpr long kNickTtl   = 3600;
+constexpr long kRelTtl    = 30;  // 短 TTL: cache-aside 写回与失效之间的竞态
+                                 // 造成的陈旧结果最多存活一个 TTL, 聊天场景可接受。
+const char kNickPrefix[]   = "cr:nick:";
+const char kBlockPrefix[]  = "cr:block:";
+const char kFriendPrefix[] = "cr:friend:";
+
+std::string nick_key(uint32_t uid) {
+    return std::string(kNickPrefix) + std::to_string(uid);
+}
+std::string pair_key(const char* prefix, uint32_t a, uint32_t b) {
+    uint32_t lo = a < b ? a : b;
+    uint32_t hi = a < b ? b : a;
+    return std::string(prefix) + std::to_string(lo) + ":" + std::to_string(hi);
+}
+
+// 读昵称缓存: 命中返回 true 且 out 有效; 未命中/缓存不可用返回 false。
+bool cache_get_nick(Redis* r, uint32_t uid, std::string& out) {
+    if (r == nullptr) return false;
+    bool found = false;
+    if (!r->get(nick_key(uid), out, found)) return false;
+    return found;
+}
+void cache_set_nick(Redis* r, uint32_t uid, const std::string& nick) {
+    if (r) r->set(nick_key(uid), nick, kNickTtl);
+}
+void cache_invalidate_nick(Redis* r, uint32_t uid) {
+    if (r) r->del(nick_key(uid));
+}
+
+// 读布尔关系缓存: 命中返回 true 且 out 有效; 未命中/缓存不可用返回 false。
+bool cache_get_bool(Redis* r, const std::string& key, bool& out) {
+    if (r == nullptr) return false;
+    std::string v;
+    bool found = false;
+    if (!r->get(key, v, found) || !found) return false;
+    out = (v == "1");
+    return true;
+}
+void cache_set_bool(Redis* r, const std::string& key, bool val) {
+    if (r) r->set(key, val ? "1" : "0", kRelTtl);
+}
+void cache_invalidate_bool(Redis* r, const std::string& key) {
+    if (r) r->del(key);
 }
 
 }  // namespace
@@ -71,6 +135,11 @@ int register_user(Db& db, const std::string& username, const std::string& passwo
         std::to_string(user_id) + "," + std::to_string(user_id) + ",1,'self'," +
         std::to_string(now_sec()) + ")";
     if (!db.execute(self_friend)) return protocol::user::ERR_SYSTEM;
+
+    // 新用户可能因 uid 复用残留旧缓存, 清一下昵称与自好友关系。
+    RedisGuard r(redis_pool());
+    cache_invalidate_nick(r.get(), user_id);
+    cache_invalidate_bool(r.get(), pair_key(kFriendPrefix, user_id, user_id));
 
     return protocol::user::ERR_SUCCESS;
 }
@@ -136,6 +205,10 @@ int cancel_user(Db& db, uint32_t user_id) {
     for (const auto& sql : dels) {
         if (!db.execute(sql)) return protocol::user::ERR_SYSTEM;
     }
+    // 失效: 昵称缓存直接清; 涉及该用户的 friend/block 关系键由短 TTL 兜底
+    // (此处不枚举其好友列表逐个失效, 保持改动最小)。
+    RedisGuard r(redis_pool());
+    cache_invalidate_nick(r.get(), user_id);
     return protocol::user::ERR_SUCCESS;
 }
 
@@ -191,6 +264,11 @@ int friend_del(Db& db, uint32_t user_id, uint32_t friend_id) {
         " AND blockee_id=" + std::to_string(friend_id) + ")" +
         " OR (blocker_id=" + std::to_string(friend_id) + " AND blockee_id=" + std::to_string(user_id) + ")";
     if (!db.execute(unblock)) return protocol::user::ERR_SYSTEM;
+
+    // 失效: 好友关系与拉黑状态都变了(规范化键覆盖双向)。
+    RedisGuard r(redis_pool());
+    cache_invalidate_bool(r.get(), pair_key(kFriendPrefix, user_id, friend_id));
+    cache_invalidate_bool(r.get(), pair_key(kBlockPrefix, user_id, friend_id));
     return protocol::user::ERR_SUCCESS;
 }
 
@@ -216,6 +294,7 @@ int friend_list(Db& db, uint32_t user_id,
 }
 
 int friend_block(Db& db, uint32_t user_id, uint32_t friend_id, bool block) {
+    RedisGuard r(redis_pool());  // 提前取, 下方写库成功后失效缓存
     if (block) {
         // 拉黑: 只写 blocks 表, 不碰 friends —— 好友关系保持不受影响,
         // 拉黑仅作为消息发送闸门(见 friend_is_blocked)。
@@ -229,11 +308,18 @@ int friend_block(Db& db, uint32_t user_id, uint32_t friend_id, bool block) {
                           " AND blockee_id=" + std::to_string(friend_id);
         if (!db.execute(sql)) return protocol::user::ERR_SYSTEM;
     }
+    // 失效: 拉黑/取消拉黑都改变 is_blocked 结果(规范化键覆盖双向)。
+    cache_invalidate_bool(r.get(), pair_key(kBlockPrefix, user_id, friend_id));
     return protocol::user::ERR_SUCCESS;
 }
 
 bool friend_is_blocked(Db& db, uint32_t user_id, uint32_t peer_id) {
     // 任一方向存在拉黑记录即视为被拦(用于聊天发送闸门)
+    RedisGuard r(redis_pool());
+    std::string key = pair_key(kBlockPrefix, user_id, peer_id);
+    bool cached = false;
+    if (cache_get_bool(r.get(), key, cached)) return cached;
+
     std::string sql =
         "SELECT 1 FROM blocks WHERE (blocker_id=" + std::to_string(user_id) +
         " AND blockee_id=" + std::to_string(peer_id) + ")" +
@@ -244,11 +330,17 @@ bool friend_is_blocked(Db& db, uint32_t user_id, uint32_t peer_id) {
         blocked = true;
         return false;
     });
+    cache_set_bool(r.get(), key, blocked);
     return blocked;
 }
 
 bool friend_are_friends(Db& db, uint32_t user_id, uint32_t peer_id) {
     // 任一方向存在 status=1 即视为好友(接受时双方向都写 status=1)
+    RedisGuard r(redis_pool());
+    std::string key = pair_key(kFriendPrefix, user_id, peer_id);
+    bool cached = false;
+    if (cache_get_bool(r.get(), key, cached)) return cached;
+
     std::string sql =
         "SELECT 1 FROM friends WHERE status=1 AND (user_id=" + std::to_string(user_id) +
         " AND friend_id=" + std::to_string(peer_id) +
@@ -259,6 +351,7 @@ bool friend_are_friends(Db& db, uint32_t user_id, uint32_t peer_id) {
         found = true;
         return false;
     });
+    cache_set_bool(r.get(), key, found);
     return found;
 }
 
@@ -275,6 +368,10 @@ bool friend_accept_by_chat(Db& db, uint32_t from_id, uint32_t to_id) {
         std::to_string(from_id) + "," + std::to_string(to_id) + ",1,''," +
         std::to_string(now_sec()) + ") ON DUPLICATE KEY UPDATE status=1";
     if (!db.execute(ins)) return false;
+
+    // 失效: 好友关系由 pending 变为 accepted。
+    RedisGuard r(redis_pool());
+    cache_invalidate_bool(r.get(), pair_key(kFriendPrefix, from_id, to_id));
     return true;
 }
 
@@ -293,6 +390,9 @@ int friend_ids(Db& db, uint32_t user_id, std::vector<uint32_t>& out) {
 }
 
 bool get_nickname(Db& db, uint32_t user_id, std::string& out) {
+    RedisGuard r(redis_pool());
+    if (cache_get_nick(r.get(), user_id, out)) return true;
+
     out.clear();
     std::string sql = "SELECT nickname FROM users WHERE user_id=" + std::to_string(user_id);
     bool found = false;
@@ -301,6 +401,7 @@ bool get_nickname(Db& db, uint32_t user_id, std::string& out) {
         out = row[0];
         return false;
     });
+    if (found) cache_set_nick(r.get(), user_id, out);
     return found;
 }
 
